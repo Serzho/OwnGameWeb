@@ -5,11 +5,16 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func RegisterAuthRoutes(r *gin.Engine, _ *handlers.AuthHandler) *gin.RouterGroup {
+func RegisterAuthRoutes(r *gin.Engine, h *handlers.AuthHandler) *gin.RouterGroup {
 	group := r.Group("/auth")
-	{
-		//users.GET("/:id", h.GetUser)
-		//users.POST("/", h.CreateUser)
-	}
+
+	group.GET("/signin", h.SignInPage)
+	group.GET("/signup", h.SignUpPage)
+	group.GET("/recoverPassword", h.RecoverPasswordPage)
+
+	group.POST("/signin", h.SignIn)
+	group.POST("/signup", h.SignUp)
+	group.POST("/recoverPassword", h.RecoverPassword)
+
 	return group
 }
