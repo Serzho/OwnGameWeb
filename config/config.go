@@ -31,16 +31,20 @@ type ServerConfig struct {
 	Url  string
 }
 
-func getStringEnv(key string, defaultVal string) string {
-	if value, exists := os.LookupEnv(key); exists {
+func getStringEnv(name string, defaultVal string) string {
+	if value, exists := os.LookupEnv(name); exists {
 		return value
 	}
-	fmt.Printf("Environment variable %s is missing.\n", key)
+	fmt.Printf("Environment variable %s is missing.\n", name)
 	return defaultVal
 }
 
 func getIntEnv(name string, defaultVal int) int {
-	valueStr := getStringEnv(name, "")
+	valueStr, exists := os.LookupEnv(name)
+	if !exists {
+		fmt.Printf("Environment variable %s is missing.\n", name)
+		return defaultVal
+	}
 	if value, err := strconv.Atoi(valueStr); err == nil {
 		return value
 	}
