@@ -6,12 +6,13 @@ import (
 	"OwnGameWeb/internal/api/middleware"
 	"OwnGameWeb/internal/api/routes"
 	"OwnGameWeb/internal/services"
+	"fmt"
 	"github.com/gin-gonic/gin"
 )
 
 func main() {
 	router := gin.Default()
-	_ = config.Load()
+	cfg := config.Load()
 
 	router.Use(gin.Recovery(), middleware.Logger(), middleware.Auth())
 
@@ -27,7 +28,7 @@ func main() {
 	routes.RegisterPlayRoutes(router, playHandler)
 	routes.RegisterAuthRoutes(router, authHandler)
 
-	err := router.Run(":8080")
+	err := router.Run(fmt.Sprintf("%s:%d", cfg.Server.Url, cfg.Server.Port))
 	if err != nil {
 		panic(err)
 	}
