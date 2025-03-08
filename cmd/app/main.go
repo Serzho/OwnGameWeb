@@ -14,7 +14,7 @@ func main() {
 	router := gin.Default()
 	cfg := config.Load()
 
-	router.Use(gin.Recovery(), middleware.Logger(), middleware.Auth())
+	router.Use(gin.Recovery(), middleware.Logger())
 
 	authService := services.NewAuthService()
 	manageService := services.NewManageService()
@@ -24,9 +24,13 @@ func main() {
 	manageHandler := handlers.NewManageHandler(manageService)
 	playHandler := handlers.NewPlayHandler(playService)
 
-	routes.RegisterManageRoutes(router, manageHandler)
-	routes.RegisterPlayRoutes(router, playHandler)
+	manageGroup := routes.RegisterManageRoutes(router, manageHandler)
+	playGroup := routes.RegisterPlayRoutes(router, playHandler)
 	routes.RegisterAuthRoutes(router, authHandler)
+	routes.RegisterOverviewRoutes(router)
+
+	manageGroup.Use(middleware.Auth(cfg))
+	playGroup.Use(middleware.Auth(cfg))
 
 	err := router.Run(fmt.Sprintf("%s:%d", cfg.Server.Url, cfg.Server.Port))
 	if err != nil {
