@@ -23,11 +23,12 @@ func main() {
 	authHandler := handlers.NewAuthHandler(authService)
 	manageHandler := handlers.NewManageHandler(manageService)
 	playHandler := handlers.NewPlayHandler(playService)
+	overviewHandler := handlers.NewOverviewHandler()
 
 	manageGroup := routes.RegisterManageRoutes(router, manageHandler)
 	playGroup := routes.RegisterPlayRoutes(router, playHandler)
 	routes.RegisterAuthRoutes(router, authHandler)
-	routes.RegisterOverviewRoutes(router)
+	routes.RegisterOverviewRoutes(router, overviewHandler)
 
 	manageGroup.Use(middleware.Auth(cfg))
 	playGroup.Use(middleware.Auth(cfg))
