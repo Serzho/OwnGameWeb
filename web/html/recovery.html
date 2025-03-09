@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<!--suppress ALL -->
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Восстановление пароля | Своя Игра</title>
+    <link rel="stylesheet" href="/static/css/styles.css">
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="/static/js/recovery.js"></script>
+</head>
+<body>
+<div id="app">
+<header>
+    <div class="logo">СВОЯ ИГРА ONLINE</div>
+
+</header>
+
+<main>
+
+    <div class="auth-container">
+        <div class="feature-card">
+            <h2>Восстановление пароля</h2>
+            <form class="auth-form" @submit.prevent="handleSubmit">
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input
+                            type="email"
+                            id="email"
+                            v-model="email"
+                            :disabled="isLoading"
+                            required
+                    >
+                </div>
+                <button
+                        type="submit"
+                        class="btn register-btn"
+                        :disabled="isLoading || !emailValid"
+                >
+                    [[ isLoading ? 'Отправка...' : 'Отправить инструкции' ]]
+
+                </button>
+            </form>
+            <div v-if="errorMessage" class="error-message">
+               [[ errorMessage ]]
+
+            </div>
+            <div v-if="successMessage" class="success-message">
+                [[ successMessage ]]
+
+            </div>
+            <div class="auth-links">
+                <p>Вспомнили пароль?<a href="auth.html"> Войдите</a></p>
+            </div>
+        </div>
+    </div>
+
+</main>
+</div>
+</body>
+</html>

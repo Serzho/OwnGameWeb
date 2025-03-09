@@ -184,3 +184,36 @@ h1 {
         gap: 1rem;
     }
 }
+
+
+/* Password Recovery Specific */
+.recovery-instructions {
+    margin-top: 1rem;
+    color: #4a5568;
+    font-size: 0.9rem;
+    text-align: center;
+}
+
+.success-message {
+    color: #48bb78;
+    margin-top: 1rem;
+    text-align: center;
+    display: none;
+}
+
+
+.error-message {
+    color: #e53e3e;
+    margin-top: 1rem;
+    text-align: center;
+    font-size: 0.9rem;
+}
+
+button:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+button:disabled:hover {
+    transform: none;
+}
