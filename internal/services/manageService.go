@@ -1,8 +1,11 @@
 package services
 
+import "OwnGameWeb/internal/database"
+
 type ManageService struct {
+	dbController *database.DbController
 }
 
-func NewManageService() *ManageService {
-	return &ManageService{}
+func NewManageService(c *database.DbController) *ManageService {
+	return &ManageService{dbController: c}
 }

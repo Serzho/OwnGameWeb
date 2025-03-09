@@ -5,6 +5,7 @@ import (
 	"OwnGameWeb/internal/api/handlers"
 	"OwnGameWeb/internal/api/middleware"
 	"OwnGameWeb/internal/api/routes"
+	"OwnGameWeb/internal/database"
 	"OwnGameWeb/internal/services"
 	"fmt"
 	"github.com/gin-gonic/gin"
@@ -18,9 +19,11 @@ func main() {
 	router.Static("static", "./web/static")
 	router.Use(gin.Recovery(), middleware.Logger())
 
-	authService := services.NewAuthService()
-	manageService := services.NewManageService()
-	playService := services.NewPlayService()
+	dbController := database.NewDbController()
+
+	authService := services.NewAuthService(dbController)
+	manageService := services.NewManageService(dbController)
+	playService := services.NewPlayService(dbController)
 
 	authHandler := handlers.NewAuthHandler(authService)
 	manageHandler := handlers.NewManageHandler(manageService)
