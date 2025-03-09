@@ -15,6 +15,7 @@ func RegisterAuthRoutes(r *gin.Engine, h *handlers.AuthHandler) *gin.RouterGroup
 	group.POST("/signin", h.SignIn)
 	group.POST("/signup", h.SignUp)
 	group.POST("/recoverPassword", h.RecoverPassword)
+	group.POST("/signout", h.SignOut)
 
 	return group
 }
