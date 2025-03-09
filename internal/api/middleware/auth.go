@@ -2,17 +2,12 @@ package middleware
 
 import (
 	"OwnGameWeb/config"
+	"OwnGameWeb/internal/api/utils"
 	"errors"
 	"fmt"
 	"github.com/gin-gonic/gin"
-	"github.com/golang-jwt/jwt/v5"
 	"net/http"
 )
-
-type UserClaims struct {
-	Id int `json:"id"`
-	jwt.RegisteredClaims
-}
 
 func Auth(cfg *config.Config) gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -29,34 +24,11 @@ func Auth(cfg *config.Config) gin.HandlerFunc {
 			return
 		}
 
-		token, err := jwt.ParseWithClaims(tokenString, &UserClaims{}, func(token *jwt.Token) (interface{}, error) {
-			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-				return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
-			}
-			return cfg.Global.SecretPhrase, nil
-		})
+		claims, err := utils.JwtParse(tokenString, cfg.Global.SecretPhrase)
 
-		if err != nil || !token.Valid {
-			switch {
-			case errors.Is(err, jwt.ErrTokenMalformed):
-				fmt.Println("Invalid token format")
-			case errors.Is(err, jwt.ErrTokenExpired):
-				fmt.Println("Token expired")
-			case errors.Is(err, jwt.ErrTokenNotValidYet):
-				fmt.Println("Token not active yet")
-			default:
-				fmt.Printf("Validation error: %v\n", err)
-			}
+		if err != nil {
+			fmt.Println(err)
 			redirectToLogin()
-			return
-		}
-
-		claims, ok := token.Claims.(*UserClaims)
-
-		if !ok {
-			fmt.Println("Invalid token claims")
-			redirectToLogin()
-			return
 		}
 
 		fmt.Printf("Claims: %+v\n", claims)
