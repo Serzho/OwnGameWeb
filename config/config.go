@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"github.com/joho/godotenv"
 	"os"
 	"strconv"
 )
@@ -53,6 +54,9 @@ func getIntEnv(name string, defaultVal int) int {
 }
 
 func Load() *Config {
+	if err := godotenv.Load(); err != nil {
+		fmt.Println("No .env file found")
+	}
 	return &Config{
 		Server: ServerConfig{
 			Port: getIntEnv("SERVER_PORT", 8080),

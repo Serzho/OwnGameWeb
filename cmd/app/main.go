@@ -19,7 +19,7 @@ func main() {
 	router.Static("static", "./web/static")
 	router.Use(gin.Recovery(), middleware.Logger())
 
-	dbController := database.NewDbController()
+	dbController := database.NewDbController(cfg)
 
 	authService := services.NewAuthService(dbController)
 	manageService := services.NewManageService(dbController)
