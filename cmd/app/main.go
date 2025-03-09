@@ -14,6 +14,8 @@ func main() {
 	router := gin.Default()
 	cfg := config.Load()
 
+	router.LoadHTMLGlob("./web/html/*.html")
+	router.Static("static", "./web/static")
 	router.Use(gin.Recovery(), middleware.Logger())
 
 	authService := services.NewAuthService()

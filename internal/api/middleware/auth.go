@@ -13,7 +13,7 @@ func Auth(cfg *config.Config) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		redirectToLogin := func() {
 			fmt.Println("Redirect to login page")
-			c.Redirect(http.StatusTemporaryRedirect, "/signin")
+			c.Redirect(http.StatusTemporaryRedirect, "/auth/signin")
 			c.Abort()
 		}
 
