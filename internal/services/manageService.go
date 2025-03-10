@@ -1,6 +1,8 @@
 package services
 
-import "OwnGameWeb/internal/database"
+import (
+	"OwnGameWeb/internal/database"
+)
 
 type ManageService struct {
 	dbController *database.DbController
@@ -8,4 +10,8 @@ type ManageService struct {
 
 func NewManageService(c *database.DbController) *ManageService {
 	return &ManageService{dbController: c}
+}
+
+func (s *ManageService) JoinGame(_ string) error {
+	return nil
 }

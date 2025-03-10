@@ -6,6 +6,7 @@
     <title>Присоединиться | Своя Игра</title>
     <link rel="stylesheet" href="/static/css/styles.css">
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="/static/js/joingame.js"></script>
 </head>
 <body>
 <div id="app">
@@ -16,11 +17,25 @@
     <main>
         <div class="auth-container">
             <div class="feature-card"><h2>Присоединение к игре</h2>
-                <form class="auth-form">
-                    <div class="form-group"><label>Код приглашения</label> <input type="text"
-                                                                                  placeholder="Введите 6-значный код">
+                <form class="auth-form" @submit.prevent="handleSubmit">
+                    <div class="form-group">
+                        <label>Код приглашения</label>
+                        <input
+                                type="text"
+                                v-model="code"
+                                :disabled="isLoading"
+                                placeholder="Введите 6-значный код"
+                                maxlength="6"
+                        >
                     </div>
-                    <button class="btn register-btn">Присоединиться</button>
+                    <button
+                            class="btn register-btn"
+                            :disabled="isLoading || !formValid"
+                    >
+                        [[ isLoading ? 'Подключение...' : 'Присоединиться' ]]
+                    </button>
+                    <div v-if="errorMessage" class="error-message">[[ errorMessage ]]</div>
+                    <div v-if="successMessage" class="success-message">[[ successMessage ]]</div>
                 </form>
             </div>
         </div>
