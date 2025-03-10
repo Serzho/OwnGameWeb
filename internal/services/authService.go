@@ -16,7 +16,7 @@ func NewAuthService(c *database.DbController) *AuthService {
 }
 
 func (s *AuthService) SignIn(email, password string) error {
-	preparedEmail := strings.TrimSpace(email)
+	preparedEmail := strings.ToLower(strings.TrimSpace(email))
 	targetPassword, err := s.dbController.GetPassword(preparedEmail)
 
 	if err != nil {
@@ -32,7 +32,7 @@ func (s *AuthService) SignIn(email, password string) error {
 }
 
 func (s *AuthService) SignUp(name, email, password string) error {
-	preparedEmail := strings.TrimSpace(email)
+	preparedEmail := strings.ToLower(strings.TrimSpace(email))
 	preparedPassword := strings.TrimSpace(password)
 
 	_, err := s.dbController.GetUser(preparedEmail)

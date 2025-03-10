@@ -4,10 +4,9 @@ import (
 	"OwnGameWeb/config"
 	"OwnGameWeb/internal/database/models"
 	"context"
-	"errors"
 	"fmt"
 	"github.com/georgysavva/scany/v2/pgxscan"
-	"github.com/jackc/pgx/v5"
+	pgx "github.com/jackc/pgx/v5"
 )
 
 type DbController struct {
@@ -50,12 +49,7 @@ func (d *DbController) GetPassword(email string) (string, error) {
 }
 
 func (d *DbController) AddUser(name, email, password string) error {
-	_, err := d.GetUser(email)
-	if err == nil {
-		return errors.New("email already exists")
-	}
-
-	_, err = d.conn.Exec(
+	_, err := d.conn.Exec(
 		context.Background(),
 		`INSERT INTO "user" (name, email, password) VALUES ($1, $2, $3);`,
 		name, email, password,
