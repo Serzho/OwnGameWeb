@@ -52,7 +52,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         throw new Error(data.message || 'Ошибка авторизации');
                     }
 
-                    window.location.href = '/';
+                    window.location.href = '/main';
                 } catch (error) {
                     this.errorMessage = error.message;
                 } finally {

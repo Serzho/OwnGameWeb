@@ -217,3 +217,42 @@ button:disabled {
 button:disabled:hover {
     transform: none;
 }
+
+/* Добавить в конец файла */
+
+/* Главное меню */
+.menu-card {
+    text-decoration: none;
+    color: inherit;
+    transition: transform 0.3s;
+}
+
+.menu-card:hover {
+    transform: translateY(-5px);
+}
+
+/* Настройки игры */
+.checkbox-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.checkbox-group label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* Статистика профиля */
+.stats-section {
+    margin-bottom: 2rem;
+    padding: 1rem;
+    background: #f7fafc;
+    border-radius: 8px;
+}
+
+.stats-section li {
+    list-style: none;
+    margin: 0.5rem 0;
+}
