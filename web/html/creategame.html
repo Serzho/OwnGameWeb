@@ -6,6 +6,7 @@
     <title>Создать игру | Своя Игра</title>
     <link rel="stylesheet" href="/static/css/styles.css">
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="/static/js/creategame.js"></script>
 </head>
 <body>
 <div id="app">
@@ -16,33 +17,38 @@
     <main>
         <div class="auth-container">
             <div class="feature-card"><h2>Настройки игры</h2>
-                <form class="auth-form">
-                    <div class="form-group"><label>Название комнаты</label> <input type="text"
-                                                                                   placeholder="Введите название"></div>
+                <form class="auth-form" @submit.prevent="handleSubmit" enctype="multipart/form-data">
                     <div class="form-group">
-                        <label>Сложность</label>
-                        <select>
-                            <option>Легкая</option>
-                            <option>Средняя</option>
-                            <option>Сложная</option>
-                        </select>
+                        <label>Название комнаты</label>
+                        <input type="text" v-model="roomName" placeholder="Введите название" required>
                     </div>
 
                     <div class="form-group">
                         <label>Максимум игроков</label>
-                        <input type="number" min="2" max="6" value="4">
+                        <input type="number" v-model="maxPlayers" min="2" max="6" value="4" required>
                     </div>
 
                     <div class="form-group">
-                        <label>Тематика вопросов</label>
-                        <div class="checkbox-group">
-                            <label><input type="checkbox"> История</label>
-                            <label><input type="checkbox"> Наука</label>
-                            <label><input type="checkbox"> Искусство</label>
-                        </div>
+                        <label>Файл с вопросами (CSV)</label>
+                        <input
+                                type="file"
+                                accept=".csv"
+                                @change="handleFileUpload"
+                                :disabled="isLoading"
+                                required
+                        >
                     </div>
 
-                    <button class="btn register-btn">Создать игру</button>
+                    <button class="btn register-btn" :disabled="isLoading || !formValid">
+                        [[ isLoading ? 'Создание...' : 'Создать игру' ]]
+                    </button>
+
+                    <div v-if="errorMessage" class="error-message">
+                        [[ errorMessage ]]
+                    </div>
+                    <div v-if="successMessage" class="success-message">
+                        [[ successMessage ]]
+                    </div>
                 </form>
             </div>
         </div>
