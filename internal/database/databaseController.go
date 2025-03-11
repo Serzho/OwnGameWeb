@@ -6,7 +6,8 @@ import (
 	"context"
 	"fmt"
 	"github.com/georgysavva/scany/v2/pgxscan"
-	pgx "github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5"
+	"time"
 )
 
 type DbController struct {
@@ -36,6 +37,10 @@ func (d *DbController) GetUser(email string) (*models.User, error) {
         LIMIT 1;
     `, email)
 
+	if err != nil {
+		return nil, err
+	}
+
 	return &user, err
 }
 
@@ -56,6 +61,32 @@ func (d *DbController) AddUser(name, email, password string) error {
 	)
 
 	return err
+}
+
+func (d *DbController) AddGame(title string, inviteCode string, userId int, maxPlayers int) error {
+	_, err := d.conn.Exec(
+		context.Background(),
+		`INSERT INTO "game" (title, status, invite_code, start_time, master_id, players_ids, max_players)
+			VALUES ($1, $2, $3, $4, $5, $6, $7);`,
+		title, "created", inviteCode, time.Now(), userId, "ARRAY[]", maxPlayers,
+	)
+
+	return err
+}
+
+func (d *DbController) GetCurrentGameByMasterId(masterId int) (*models.Game, error) {
+	var game models.Game
+	err := pgxscan.Get(context.Background(), d.conn, &game, `
+        SELECT * FROM "game"
+        WHERE master_id = $1 AND status != 'archieved'
+        LIMIT 1;
+    `, masterId)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &game, err
 }
 
 func (d *DbController) Close() error {

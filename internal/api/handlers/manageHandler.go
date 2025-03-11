@@ -70,19 +70,18 @@ func (h *ManageHandler) CreateGame(c *gin.Context) {
 		return
 	}
 
-	jsonMap, err := utils.ParseJsonRequest(c)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code":    http.StatusBadRequest,
-			"message": fmt.Sprintf("%v", err),
+	formMap := utils.ParseFormRequest(c, []string{"title", "maxPlayers"})
+	userId, exists := c.Get("userId")
+	if !exists {
+		c.JSON(http.StatusForbidden, gin.H{
+			"code":    http.StatusForbidden,
+			"message": "user id not found",
 		})
-		return
 	}
 
-	userId := -1
-	title, maxPlayers := jsonMap["title"].(string), jsonMap["maxPlayers"].(int)
+	title, maxPlayers := formMap["title"].(string), formMap["maxPlayers"].(int)
 
-	gameId, err := h.service.CreateGame(userId, questionPack, title, maxPlayers)
+	gameId, err := h.service.CreateGame(userId.(int), questionPack, title, maxPlayers)
 
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{

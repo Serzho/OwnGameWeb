@@ -17,6 +17,17 @@ func (s *ManageService) JoinGame(_ string) error {
 	return errors.New("not implemented")
 }
 
-func (s *ManageService) CreateGame(_ int, _ string, _ string, _ int) (int, error) {
-	return -1, errors.New("not implemented")
+func (s *ManageService) CreateGame(userId int, _ string, title string, maxPlayers int) (int, error) {
+	_, err := s.dbController.GetCurrentGameByMasterId(userId)
+	if err == nil {
+		return 0, errors.New("player already playing")
+	}
+
+	// TODO: сделать генерацию кода приглашения
+	err = s.dbController.AddGame(title, "000000", userId, maxPlayers)
+	if err != nil {
+		return 0, err
+	}
+	return -1, nil // TODO:  СДЕЛАТЬ ПОЛУЧЕНИЕ ID игры
+
 }

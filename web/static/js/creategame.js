@@ -50,7 +50,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     formData.append('maxPlayers', this.maxPlayers);
                     formData.append('questionsFile', this.csvFile);
 
-                    const response = await fetch('/game/create', {
+                    const response = await fetch('/creategame', {
                         method: 'POST',
                         body: formData
                     });
