@@ -59,3 +59,38 @@ func (h *ManageHandler) JoinGame(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{})
 }
+
+func (h *ManageHandler) CreateGame(c *gin.Context) {
+	questionPack, err := utils.ParsePackGame(c)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    http.StatusBadRequest,
+			"message": fmt.Sprintf("%v", err),
+		})
+		return
+	}
+
+	jsonMap, err := utils.ParseJsonRequest(c)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    http.StatusBadRequest,
+			"message": fmt.Sprintf("%v", err),
+		})
+		return
+	}
+
+	userId := -1
+	title, maxPlayers := jsonMap["title"].(string), jsonMap["maxPlayers"].(int)
+
+	gameId, err := h.service.CreateGame(userId, questionPack, title, maxPlayers)
+
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    http.StatusBadRequest,
+			"message": fmt.Sprintf("%v", err),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"code": http.StatusOK, "gameId": gameId})
+}

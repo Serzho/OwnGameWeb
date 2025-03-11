@@ -1,6 +1,8 @@
 package handlers
 
-import "OwnGameWeb/internal/services"
+import (
+	"OwnGameWeb/internal/services"
+)
 
 type PlayHandler struct {
 	service *services.PlayService

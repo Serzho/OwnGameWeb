@@ -9,5 +9,6 @@ type Game struct {
 	InviteCode string
 	StartTime  time.Time
 	MasterId   int
-	UsersIds   []int
+	PlayersIds []int
+	MaxPlayers int
 }

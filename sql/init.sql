@@ -25,13 +25,17 @@ CREATE TABLE "game"(
     invite_code CHAR(6),
     start_time timestamp NOT NULL,
     master_id INT REFERENCES "user"(id),
-    users_ids INT[] NOT NULL
+    players_ids INT[] NOT NULL,
+    max_players SMALLINT NOT NULL
 );
 
+-- CONSTRAINTS FOR GAME TABLE
 ALTER TABLE "game"
     ADD CONSTRAINT game_title_length CHECK (LENGTH(title) >= 5),
     ADD CONSTRAINT game_status_valid CHECK (status ~ 'created|inprocess|firststage|secondstage|thirdstage|finished|archieved'),
-    ADD CONSTRAINT game_invite_code_valid CHECK (invite_code ~ '[a-zA-Z0-9]+');
+    ADD CONSTRAINT game_invite_code_valid CHECK (invite_code ~ '[a-zA-Z0-9]+'),
+    ADD CONSTRAINT game_max_users_valid CHECK (max_players > 1 AND max_players <= 6),
+    ADD CONSTRAINT game_users_count CHECK (array_length(players_ids, 1) <= max_players);
 
 
 
