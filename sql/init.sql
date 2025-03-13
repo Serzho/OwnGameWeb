@@ -2,7 +2,8 @@ CREATE TABLE "user"(
     id SERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     email VARCHAR(255) NOT NULL,
-    password CHAR(60) NOT NULL
+    password CHAR(60) NOT NULL,
+    packs int[] NOT NULL
 );
 
 -- CONSTRAINTS FOR USER TABLE
@@ -17,6 +18,27 @@ ALTER TABLE "user"
 CREATE UNIQUE INDEX user_email_unique_index
     ON "user" (email);
 
+CREATE TABLE "question_pack"(
+    id SERIAL PRIMARY KEY,
+    title VARCHAR(32) NOT NULL,
+    filename VARCHAR(64) NOT NULL,
+    owner INT REFERENCES "user"(id)
+);
+
+ALTER TABLE "question_pack"
+    ADD CONSTRAINT question_pack_filename_valid CHECK (filename ~ '[a-zA-Z0-9]+.csv'),
+    ADD CONSTRAINT question_pack_title_length CHECK (LENGTH(title) > 6);
+
+
+
+
+CREATE TABLE "question_sample"(
+    id SERIAL PRIMARY KEY,
+    pack INT REFERENCES question_pack(id),
+    themes INT[] NOT NULL,
+    questions INT[][] NOT NULL,
+    final_question INT NOT NULL
+);
 
 CREATE TABLE "game"(
     id SERIAL PRIMARY KEY,
@@ -26,7 +48,8 @@ CREATE TABLE "game"(
     start_time timestamp NOT NULL,
     master_id INT REFERENCES "user"(id),
     players_ids INT[] NOT NULL,
-    max_players SMALLINT NOT NULL
+    max_players SMALLINT NOT NULL,
+    sample INT REFERENCES "question_sample"(id)
 );
 
 -- CONSTRAINTS FOR GAME TABLE
@@ -36,8 +59,6 @@ ALTER TABLE "game"
     ADD CONSTRAINT game_invite_code_valid CHECK (invite_code ~ '[a-zA-Z0-9]+'),
     ADD CONSTRAINT game_max_users_valid CHECK (max_players > 1 AND max_players <= 6),
     ADD CONSTRAINT game_users_count CHECK (array_length(players_ids, 1) <= max_players);
-
-
 
 
 
