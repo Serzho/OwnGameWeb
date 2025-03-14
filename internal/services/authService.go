@@ -1,6 +1,7 @@
 package services
 
 import (
+	"OwnGameWeb/config"
 	"OwnGameWeb/internal/database"
 	"errors"
 	"golang.org/x/crypto/bcrypt"
@@ -9,26 +10,27 @@ import (
 
 type AuthService struct {
 	dbController *database.DbController
+	Cfg          *config.Config
 }
 
-func NewAuthService(c *database.DbController) *AuthService {
-	return &AuthService{dbController: c}
+func NewAuthService(c *database.DbController, config *config.Config) *AuthService {
+	return &AuthService{dbController: c, Cfg: config}
 }
 
-func (s *AuthService) SignIn(email, password string) error {
+func (s *AuthService) SignIn(email, password string) (int, error) {
 	preparedEmail := strings.ToLower(strings.TrimSpace(email))
-	targetPassword, err := s.dbController.GetPassword(preparedEmail)
+	user, err := s.dbController.GetUser(preparedEmail)
 
 	if err != nil {
-		return errors.New("invalid email")
+		return 0, errors.New("invalid email")
 	}
 
-	err = bcrypt.CompareHashAndPassword([]byte(targetPassword), []byte(password))
+	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
 	if err != nil {
-		return errors.New("incorrect email or password")
+		return 0, errors.New("incorrect email or password")
 	}
 
-	return nil
+	return user.Id, nil
 }
 
 func (s *AuthService) SignUp(name, email, password string) error {

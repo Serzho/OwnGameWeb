@@ -27,7 +27,7 @@ func (h *AuthHandler) SignIn(c *gin.Context) {
 	}
 
 	email, password := jsonMap["email"].(string), jsonMap["password"].(string)
-	err = h.service.SignIn(email, password)
+	userId, err := h.service.SignIn(email, password)
 
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
@@ -36,6 +36,16 @@ func (h *AuthHandler) SignIn(c *gin.Context) {
 		})
 		return
 	}
+
+	token, err := utils.JwtCreate(userId, h.service.Cfg.Global.SecretPhrase)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"code":    http.StatusUnauthorized,
+			"message": fmt.Sprintf("%v", err),
+		})
+		return
+	}
+	c.SetCookie("token", token, 60*60*24, "/", "", false, true)
 
 	c.JSON(http.StatusOK, gin.H{})
 }

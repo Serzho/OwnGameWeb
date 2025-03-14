@@ -5,8 +5,9 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func RegisterManageRoutes(r *gin.Engine, h *handlers.ManageHandler) *gin.RouterGroup {
+func RegisterManageRoutes(r *gin.Engine, h *handlers.ManageHandler, m gin.HandlerFunc) *gin.RouterGroup {
 	group := r.Group("/")
+	group.Use(m)
 
 	group.GET("/creategame", h.CreateGamePage)
 	group.POST("/creategame", h.CreateGame)
@@ -14,8 +15,10 @@ func RegisterManageRoutes(r *gin.Engine, h *handlers.ManageHandler) *gin.RouterG
 	group.GET("/main", h.MainPage)
 	group.GET("/packeditor", h.PackEditorPage)
 	group.GET("/profile", h.ProfilePage)
+	group.GET("/getallpacks", h.GetAllPacks)
 
 	group.POST("/joingame", h.JoinGame)
+	group.POST("/addpack", h.AddPack)
 
 	return group
 }

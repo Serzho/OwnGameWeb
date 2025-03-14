@@ -25,6 +25,7 @@ type DatabaseConfig struct {
 type GlobalConfig struct {
 	SecretPhrase string
 	LoggerLevel  string
+	CsvPath      string
 }
 
 type ServerConfig struct {
@@ -73,5 +74,6 @@ func Load() *Config {
 		Global: GlobalConfig{
 			SecretPhrase: getStringEnv("SECRET_PHRASE", "secret"),
 			LoggerLevel:  getStringEnv("LOGGER_LEVEL", "info"),
+			CsvPath:      getStringEnv("CSV_PATH", "./pack/"),
 		}}
 }

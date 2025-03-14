@@ -6,6 +6,9 @@ CREATE TABLE "user"(
     packs int[] NOT NULL
 );
 
+ALTER TABLE "user"
+    ALTER COLUMN packs SET DEFAULT '{}';
+
 -- CONSTRAINTS FOR USER TABLE
 ALTER TABLE "user"
     ADD CONSTRAINT user_name_length CHECK (LENGTH(name) >= 3),
@@ -26,7 +29,7 @@ CREATE TABLE "question_pack"(
 );
 
 ALTER TABLE "question_pack"
-    ADD CONSTRAINT question_pack_filename_valid CHECK (filename ~ '[a-zA-Z0-9]+.csv'),
+    --ADD CONSTRAINT question_pack_filename_valid CHECK (filename ~ '[a-zA-Z0-9]+.csv'),
     ADD CONSTRAINT question_pack_title_length CHECK (LENGTH(title) > 6);
 
 
@@ -46,7 +49,7 @@ CREATE TABLE "game"(
     status VARCHAR(16) NOT NULL,
     invite_code CHAR(6),
     start_time timestamp NOT NULL,
-    master_id INT REFERENCES "user"(id),
+    master INT REFERENCES "user"(id),
     players_ids INT[] NOT NULL,
     max_players SMALLINT NOT NULL,
     sample INT REFERENCES "question_sample"(id)

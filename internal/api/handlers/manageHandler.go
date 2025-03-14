@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"net/http"
+	"strconv"
 )
 
 type ManageHandler struct {
@@ -60,8 +61,20 @@ func (h *ManageHandler) JoinGame(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{})
 }
 
-func (h *ManageHandler) CreateGame(c *gin.Context) {
-	questionPack, err := utils.ParsePackGame(c)
+func (h *ManageHandler) AddPack(c *gin.Context) {
+	file, header, err := c.Request.FormFile("packFile")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    http.StatusBadRequest,
+			"message": "csv file is required",
+		})
+		return
+	}
+
+	userId := c.GetInt("userId")
+
+	err = h.service.AddPack(userId, file, header)
+
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    http.StatusBadRequest,
@@ -70,7 +83,11 @@ func (h *ManageHandler) CreateGame(c *gin.Context) {
 		return
 	}
 
-	formMap := utils.ParseFormRequest(c, []string{"title", "maxPlayers"})
+	c.JSON(http.StatusOK, gin.H{})
+}
+
+func (h *ManageHandler) CreateGame(c *gin.Context) {
+
 	userId, exists := c.Get("userId")
 	if !exists {
 		c.JSON(http.StatusForbidden, gin.H{
@@ -79,9 +96,17 @@ func (h *ManageHandler) CreateGame(c *gin.Context) {
 		})
 	}
 
-	title, maxPlayers := formMap["title"].(string), formMap["maxPlayers"].(int)
+	maxPlayers, err := strconv.Atoi(c.PostForm("maxPlayers"))
 
-	gameId, err := h.service.CreateGame(userId.(int), questionPack, title, maxPlayers)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    http.StatusBadRequest,
+			"message": "maxPlayers is required",
+		})
+	}
+	title := c.PostForm("title")
+
+	gameId, err := h.service.CreateGame(userId.(int), "", title, maxPlayers)
 
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -92,4 +117,25 @@ func (h *ManageHandler) CreateGame(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"code": http.StatusOK, "gameId": gameId})
+}
+
+func (h *ManageHandler) GetAllPacks(c *gin.Context) {
+	userId, exists := c.Get("userId")
+	if !exists {
+		c.JSON(http.StatusForbidden, gin.H{
+			"code":    http.StatusForbidden,
+			"message": "user id not found",
+		})
+	}
+
+	packs, err := h.service.GetAllPacks(userId.(int))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    http.StatusBadRequest,
+			"message": "can not get all packs",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"code": http.StatusOK, "packs": packs})
 }

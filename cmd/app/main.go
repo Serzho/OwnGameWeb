@@ -9,11 +9,17 @@ import (
 	"OwnGameWeb/internal/services"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"os"
 )
 
 func main() {
 	router := gin.Default()
 	cfg := config.Load()
+
+	err := os.MkdirAll(cfg.Global.CsvPath, 0755)
+	if err != nil {
+		fmt.Println("Ошибка:", err)
+	}
 
 	router.LoadHTMLGlob("./web/html/*.html")
 	router.Static("static", "./web/static")
@@ -21,8 +27,8 @@ func main() {
 
 	dbController := database.NewDbController(cfg)
 
-	authService := services.NewAuthService(dbController)
-	manageService := services.NewManageService(dbController)
+	authService := services.NewAuthService(dbController, cfg)
+	manageService := services.NewManageService(dbController, cfg)
 	playService := services.NewPlayService(dbController)
 
 	authHandler := handlers.NewAuthHandler(authService)
@@ -30,15 +36,12 @@ func main() {
 	playHandler := handlers.NewPlayHandler(playService)
 	overviewHandler := handlers.NewOverviewHandler()
 
-	manageGroup := routes.RegisterManageRoutes(router, manageHandler)
-	playGroup := routes.RegisterPlayRoutes(router, playHandler)
+	routes.RegisterManageRoutes(router, manageHandler, middleware.Auth(cfg))
+	routes.RegisterPlayRoutes(router, playHandler, middleware.Auth(cfg))
 	routes.RegisterAuthRoutes(router, authHandler)
 	routes.RegisterOverviewRoutes(router, overviewHandler)
 
-	manageGroup.Use(middleware.Auth(cfg))
-	playGroup.Use(middleware.Auth(cfg))
-
-	err := router.Run(fmt.Sprintf("%s:%d", cfg.Server.Url, cfg.Server.Port))
+	err = router.Run(fmt.Sprintf("%s:%d", cfg.Server.Url, cfg.Server.Port))
 	if err != nil {
 		panic(err)
 	}

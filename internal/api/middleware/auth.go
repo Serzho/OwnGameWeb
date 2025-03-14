@@ -29,6 +29,7 @@ func Auth(cfg *config.Config) gin.HandlerFunc {
 		if err != nil {
 			fmt.Println(err)
 			redirectToLogin()
+			return
 		}
 
 		fmt.Printf("Claims: %+v\n", claims)

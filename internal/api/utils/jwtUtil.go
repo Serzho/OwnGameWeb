@@ -18,7 +18,7 @@ func JwtParse(tokenString string, secretPhrase string) (*UserClaims, error) {
 			fmt.Printf("unexpected signing method: %v\n", token.Header["alg"])
 			return nil, JwtParseErr
 		}
-		return secretPhrase, nil
+		return []byte(secretPhrase), nil
 	})
 
 	if err != nil || !token.Valid {
@@ -44,4 +44,16 @@ func JwtParse(tokenString string, secretPhrase string) (*UserClaims, error) {
 	}
 
 	return claims, nil
+}
+
+func JwtCreate(userId int, secretPhrase string) (string, error) {
+	claims := jwt.NewWithClaims(jwt.SigningMethodHS256, UserClaims{Id: userId, RegisteredClaims: jwt.RegisteredClaims{}})
+
+	tokenString, err := claims.SignedString([]byte(secretPhrase))
+
+	if err != nil {
+		return "", errors.New("error create token")
+	}
+
+	return tokenString, nil
 }

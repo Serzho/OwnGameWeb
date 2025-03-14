@@ -256,3 +256,98 @@ button:disabled:hover {
     list-style: none;
     margin: 0.5rem 0;
 }
+
+
+.header-right {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+.add-btn {
+    background: #48bb78;
+    font-size: 1.2rem;
+    padding: 0.3rem 0.8rem;
+}
+
+.packs-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin-top: 2rem;
+}
+
+.pack-card {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.pack-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.edit-btn {
+    background: #2c5282;
+    padding: 0.3rem 0.6rem;
+}
+
+.delete-btn {
+    background: #e53e3e;
+    padding: 0.3rem 0.6rem;
+}
+
+.profile-btn {
+    background: #4a5568;
+}
+
+
+.add-btn {
+    background: #48bb78;
+    padding: 0.6rem 1.2rem;
+    margin-bottom: 2rem;
+    border-radius: 25px;
+    display: flex;
+    align-items: center;
+    transition: all 0.2s;
+    position: relative;
+}
+
+.add-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 3px 8px rgba(72, 187, 120, 0.3);
+}
+
+.add-btn-content {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 500;
+}
+
+.plus-icon {
+    font-size: 1.4rem;
+    line-height: 1;
+    margin-top: -2px;
+}
+
+/* Для мобильной адаптации */
+@media (max-width: 480px) {
+    .add-btn-content span:last-child {
+        display: none;
+    }
+
+    .add-btn {
+        padding: 0.5rem;
+        border-radius: 50%;
+    }
+
+    .plus-icon {
+        font-size: 1.6rem;
+    }
+}

@@ -4,6 +4,7 @@ import (
 	"OwnGameWeb/config"
 	"OwnGameWeb/internal/database/models"
 	"context"
+	"errors"
 	"fmt"
 	"github.com/georgysavva/scany/v2/pgxscan"
 	"github.com/jackc/pgx/v5"
@@ -91,4 +92,66 @@ func (d *DbController) GetCurrentGameByMasterId(masterId int) (*models.Game, err
 
 func (d *DbController) Close() error {
 	return d.conn.Close(context.Background())
+}
+
+func (d *DbController) AddPack(userId int, filename string) error {
+	tx, err := d.conn.Begin(context.Background())
+	defer func() {
+		_ = tx.Rollback(context.Background())
+	}()
+
+	if err != nil {
+		return errors.New("transaction start failed")
+	}
+
+	_, err = tx.Exec(context.Background(),
+		`INSERT INTO "question_pack" (title, filename, owner) VALUES ($1, $2, $3);`,
+		"Новый пак", filename, userId,
+	)
+
+	if err != nil {
+		return errors.New("database add pack failed")
+	}
+
+	_, err = d.conn.Exec(
+		context.Background(),
+		`UPDATE "user" SET packs = array_append(packs, currval(pg_get_serial_sequence('question_pack', 'id')))
+			WHERE id=$1`,
+		userId,
+	)
+	if err != nil {
+		return errors.New("database add pack to user failed")
+	}
+
+	err = tx.Commit(context.Background())
+
+	if err != nil {
+		return errors.New("transaction commit failed")
+	}
+
+	return nil
+}
+
+func (d *DbController) GetUserPacks(userId int) (*[]models.QuestionPack, error) {
+
+	var packs []models.QuestionPack
+
+	rows, err := d.conn.Query(context.Background(), `
+        SELECT  p.id, title, filename, p.owner  FROM "user" u
+			JOIN LATERAL unnest(packs) AS pack_id ON true
+			JOIN question_pack p ON p.id = pack_id
+			WHERE u.id = $1;
+    `, userId)
+
+	if err != nil {
+		return nil, errors.New("query error")
+	}
+
+	err = pgxscan.ScanAll(&packs, rows)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &packs, err
 }

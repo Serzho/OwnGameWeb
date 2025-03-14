@@ -1,25 +1,61 @@
 package utils
 
 import (
-	"encoding/csv"
+	"OwnGameWeb/config"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
-	"github.com/gin-gonic/gin"
+	"fmt"
+	"io"
+	"math/rand/v2"
+	"mime/multipart"
+	"os"
+	"time"
 )
 
-func ParsePackGame(c *gin.Context) (string, error) {
-	file, header, err := c.Request.FormFile("*.csv")
-	if err != nil {
-		return "", errors.New("CSV file is required")
-	}
+func getPackFilename() (string, error) {
+	for range 1000000 {
+		hashInp := fmt.Sprintf("%d%s", rand.IntN(10000000), time.Now())
+		h := sha256.New()
+		h.Write([]byte(hashInp))
+		hashBytes := h.Sum(nil)
 
+		filename := hex.EncodeToString(hashBytes)
+		if _, err := os.Stat(filename); os.IsNotExist(err) {
+			return filename, nil
+		}
+	}
+	return "", errors.New("cannot generate correct filename")
+}
+
+func SavePackGame(cfg *config.Config, file multipart.File, header *multipart.FileHeader) (string, error) {
 	if header.Header.Get("Content-Type") != "text/csv" {
 		return "", errors.New("invalid file type")
 	}
 
-	reader := csv.NewReader(file)
-	_, err = reader.ReadAll()
+	filename, err := getPackFilename()
+
 	if err != nil {
-		return "", errors.New("error reading CSV")
+		return "", errors.New("filename generation error")
 	}
-	return "", nil
+
+	filepath := fmt.Sprintf("%s%s", cfg.Global.CsvPath, filename)
+
+	dst, err := os.Create(filepath)
+	if err != nil {
+		return "", errors.New("create file error")
+	}
+
+	_, err = io.Copy(dst, file)
+
+	if err != nil {
+		_ = dst.Close()
+		_ = file.Close()
+		return "", errors.New("save file error")
+	}
+
+	_ = file.Close()
+	_ = dst.Close()
+
+	return filename, nil
 }
