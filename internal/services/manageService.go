@@ -77,3 +77,25 @@ func (s *ManageService) GetPackFile(packId int) (string, error) {
 
 	return filename, nil
 }
+func (s *ManageService) DeletePack(userId int, packId int) error {
+	pack, err := s.dbController.GetPack(packId)
+	if err != nil {
+		return errors.New("get pack from database failed")
+	}
+
+	if pack.Owner != userId {
+		return errors.New("you are not the owner of this pack")
+	}
+
+	err = s.dbController.DeletePack(packId)
+	if err != nil {
+		return errors.New("database delete failed")
+	}
+
+	err = utils.DeletePackGame(pack.Filename, s.config)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

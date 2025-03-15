@@ -187,5 +187,35 @@ func (h *ManageHandler) DownloadPack(c *gin.Context) {
 	})
 }
 
-func (h *ManageHandler) DeletePack(_ *gin.Context) {
+func (h *ManageHandler) DeletePack(c *gin.Context) {
+	packId, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    http.StatusBadRequest,
+			"message": "pack id is invalid",
+		})
+		return
+	}
+
+	userId, exists := c.Get("userId")
+	if !exists {
+		c.JSON(http.StatusForbidden, gin.H{
+			"code":    http.StatusForbidden,
+			"message": "user id not found",
+		})
+		return
+	}
+
+	err = h.service.DeletePack(userId.(int), packId)
+
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    http.StatusBadRequest,
+			"message": "can not delete pack",
+		})
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code": http.StatusOK,
+	})
 }

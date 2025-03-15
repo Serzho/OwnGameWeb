@@ -59,3 +59,11 @@ func SavePackGame(cfg *config.Config, file multipart.File, header *multipart.Fil
 
 	return filename, nil
 }
+
+func DeletePackGame(filename string, cfg *config.Config) error {
+	err := os.Remove(fmt.Sprintf("%s%s", cfg.Global.CsvPath, filename))
+	if err != nil {
+		return errors.New("deleting file failed")
+	}
+	return nil
+}

@@ -21,7 +21,7 @@ func RegisterManageRoutes(r *gin.Engine, h *handlers.ManageHandler, m gin.Handle
 	group.POST("/joingame", h.JoinGame)
 	group.POST("/addpack", h.AddPack)
 
-	group.DELETE("/deletepack/id", h.DeletePack)
+	group.DELETE("/deletepack/:id", h.DeletePack)
 
 	return group
 }

@@ -61,6 +61,42 @@ func (d *DbController) GetPack(packId int) (*models.QuestionPack, error) {
 	return &questionPack, err
 }
 
+func (d *DbController) DeletePack(packId int) error {
+	tx, err := d.conn.Begin(context.Background())
+	defer func() {
+		_ = tx.Rollback(context.Background())
+	}()
+
+	if err != nil {
+		return errors.New("transaction start failed")
+	}
+
+	_, err = tx.Exec(context.Background(),
+		`DELETE FROM "question_pack" WHERE id = $1;`, packId,
+	)
+
+	if err != nil {
+		return errors.New("database delete pack failed")
+	}
+
+	_, err = d.conn.Exec(
+		context.Background(),
+		`UPDATE "user" SET packs = array_remove(packs, $1::int)
+			WHERE packs @> ARRAY[$1::int]`, packId,
+	)
+	if err != nil {
+		return errors.New("removing packs from user failed")
+	}
+
+	err = tx.Commit(context.Background())
+
+	if err != nil {
+		return errors.New("transaction commit failed")
+	}
+
+	return nil
+}
+
 func (d *DbController) GetPassword(email string) (string, error) {
 	user, err := d.GetUser(email)
 	if err != nil {
