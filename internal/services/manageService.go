@@ -51,6 +51,9 @@ func (s *ManageService) CreateGame(userId int, packId int, title string, maxPlay
 	}
 
 	inviteCode, err := utils.GenerateInviteCode(invitesList)
+	if err != nil {
+		return errors.New("generate invite code failed")
+	}
 	err = s.dbController.AddGame(title, inviteCode, userId, maxPlayers, sampleId)
 
 	if err != nil {

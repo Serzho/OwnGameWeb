@@ -106,7 +106,7 @@ func ParseQuestions(filename string) (map[int]map[int]models.ThemeJson, error) {
 		themes, ok := rounds[round]
 		if !ok {
 			rounds[round] = map[int]models.ThemeJson{}
-			themes, _ = rounds[round]
+			themes = rounds[round]
 		}
 
 		th, ok := themes[themeId]
@@ -199,7 +199,7 @@ func GenerateSample(pack *models.QuestionPack, cfg *config.Config) (*models.Ques
 			questionList = append(questionList, theme.Questions[ind])
 		}
 
-		firstRound = append(firstRound, &models.ThemeJson{theme.Title, questionList})
+		firstRound = append(firstRound, &models.ThemeJson{Title: theme.Title, Questions: questionList})
 	}
 
 	for _, themeId := range secondSelectedThemes {
@@ -221,7 +221,7 @@ func GenerateSample(pack *models.QuestionPack, cfg *config.Config) (*models.Ques
 			questionList = append(questionList, theme.Questions[ind])
 		}
 
-		secondRound = append(secondRound, &models.ThemeJson{theme.Title, questionList})
+		secondRound = append(secondRound, &models.ThemeJson{Title: theme.Title, Questions: questionList})
 	}
 
 	themeId := thirdSelectedThemes[0]
@@ -243,10 +243,10 @@ func GenerateSample(pack *models.QuestionPack, cfg *config.Config) (*models.Ques
 		questionList = append(questionList, theme.Questions[ind])
 	}
 
-	finalRound = &models.ThemeJson{theme.Title, questionList}
+	finalRound = &models.ThemeJson{Title: theme.Title, Questions: questionList}
 
 	content, err := json.Marshal(
-		models.QuestionSampleJson{firstRound, secondRound, finalRound})
+		models.QuestionSampleJson{FirstRound: firstRound, SecondRound: secondRound, FinalRound: finalRound})
 	if err != nil {
 		return nil, errors.New("marshal json failed")
 	}
