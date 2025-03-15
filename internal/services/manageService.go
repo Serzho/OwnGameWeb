@@ -23,18 +23,40 @@ func (s *ManageService) JoinGame(_ string) error {
 	return errors.New("not implemented")
 }
 
-func (s *ManageService) CreateGame(userId int, _ string, title string, maxPlayers int) (int, error) {
+func (s *ManageService) CreateGame(userId int, packId int, title string, maxPlayers int) error {
 	_, err := s.dbController.GetCurrentGameByMasterId(userId)
 	if err == nil {
-		return 0, errors.New("player already playing")
+		return errors.New("player already playing")
 	}
 
-	// TODO: сделать генерацию кода приглашения
-	err = s.dbController.AddGame(title, "000000", userId, maxPlayers)
+	pack, err := s.dbController.GetPack(packId)
+
 	if err != nil {
-		return 0, err
+		return errors.New("pack not found")
 	}
-	return -1, nil // TODO:  СДЕЛАТЬ ПОЛУЧЕНИЕ ID игры
+
+	sample, err := utils.GenerateSample(pack, s.config)
+	if err != nil {
+		return errors.New("generate sample failed")
+	}
+
+	sampleId, err := s.dbController.AddSample(sample)
+	if err != nil {
+		return errors.New("add sample failed")
+	}
+
+	invitesList, err := s.dbController.GetInvites()
+	if err != nil {
+		return errors.New("get invites failed")
+	}
+
+	inviteCode, err := utils.GenerateInviteCode(invitesList)
+	err = s.dbController.AddGame(title, inviteCode, userId, maxPlayers, sampleId)
+
+	if err != nil {
+		return err
+	}
+	return nil
 
 }
 

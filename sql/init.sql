@@ -38,9 +38,7 @@ ALTER TABLE "question_pack"
 CREATE TABLE "question_sample"(
     id SERIAL PRIMARY KEY,
     pack INT REFERENCES question_pack(id),
-    themes INT[] NOT NULL,
-    questions INT[][] NOT NULL,
-    final_question INT NOT NULL
+    content json NOT NULL
 );
 
 CREATE TABLE "game"(

@@ -116,12 +116,12 @@ func (d *DbController) AddUser(name, email, password string) error {
 	return err
 }
 
-func (d *DbController) AddGame(title string, inviteCode string, userId int, maxPlayers int) error {
+func (d *DbController) AddGame(title string, inviteCode string, userId int, maxPlayers int, sampleId int) error {
 	_, err := d.conn.Exec(
 		context.Background(),
-		`INSERT INTO "game" (title, status, invite_code, start_time, master_id, players_ids, max_players)
-			VALUES ($1, $2, $3, $4, $5, $6, $7);`,
-		title, "created", inviteCode, time.Now(), userId, "ARRAY[]", maxPlayers,
+		`INSERT INTO "game" (title, status, invite_code, start_time, master_id, players_ids, max_players, sample)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8);`,
+		title, "created", inviteCode, time.Now(), userId, "{}", maxPlayers, sampleId,
 	)
 
 	return err
@@ -206,4 +206,37 @@ func (d *DbController) GetUserPacks(userId int) (*[]models.QuestionPack, error) 
 	}
 
 	return &packs, err
+}
+
+func (d *DbController) AddSample(sample *models.QuestionSample) (int, error) {
+	var id int
+	err := d.conn.QueryRow(
+		context.Background(),
+		`INSERT INTO "question_sample" (pack, content) VALUES ($1::int, $2) RETURNING id;`,
+		sample.Pack, sample.Content,
+	).Scan(&id)
+
+	if err != nil {
+		return 0, errors.New("insert sample failed")
+	}
+
+	return id, nil
+}
+
+func (d *DbController) GetInvites() ([]string, error) {
+	var invites []string
+	rows, err := d.conn.Query(
+		context.Background(),
+		`SELECT invite_code FROM "game" WHERE status = 'created';`,
+	)
+	if err != nil {
+		return nil, errors.New("get invites failed")
+	}
+
+	err = pgxscan.ScanAll(&invites, rows)
+	if err != nil {
+		return nil, errors.New("scan invites failed")
+	}
+
+	return invites, nil
 }

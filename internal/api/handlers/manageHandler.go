@@ -88,28 +88,21 @@ func (h *ManageHandler) AddPack(c *gin.Context) {
 }
 
 func (h *ManageHandler) CreateGame(c *gin.Context) {
-
-	userId, exists := c.Get("userId")
-	if !exists {
-		c.JSON(http.StatusForbidden, gin.H{
-			"code":    http.StatusForbidden,
-			"message": "user id not found",
-		})
-		return
-	}
-
-	maxPlayers, err := strconv.Atoi(c.PostForm("maxPlayers"))
-
+	jsonMap, err := utils.ParseJsonRequest(c)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code":    http.StatusBadRequest,
-			"message": "maxPlayers is required",
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"code":    http.StatusUnauthorized,
+			"message": fmt.Sprintf("%v", err),
 		})
 		return
 	}
-	title := c.PostForm("title")
+	title := jsonMap["title"].(string)
+	maxPlayers := int(jsonMap["maxPlayers"].(float64))
+	packId := int(jsonMap["packId"].(float64))
 
-	gameId, err := h.service.CreateGame(userId.(int), "", title, maxPlayers)
+	userId := c.GetInt("userId")
+
+	err = h.service.CreateGame(userId, packId, title, maxPlayers)
 
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -119,7 +112,7 @@ func (h *ManageHandler) CreateGame(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"code": http.StatusOK, "gameId": gameId})
+	c.Redirect(http.StatusTemporaryRedirect, "/play/")
 }
 
 func (h *ManageHandler) GetAllPacks(c *gin.Context) {

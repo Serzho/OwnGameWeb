@@ -29,14 +29,21 @@
                     </div>
 
                     <div class="form-group">
-                        <label>Файл с вопросами (CSV)</label>
-                        <input
-                                type="file"
-                                accept=".csv"
-                                @change="handleFileUpload"
+                        <label>Выберите пак вопросов</label>
+                        <select
+                                v-model="selectedPackId"
                                 :disabled="isLoading"
                                 required
+                                class="form-select"
                         >
+                            <option disabled value="">Выберите пак</option>
+                            <option
+                                    v-for="pack in packs"
+                                    :value="pack.id"
+                            >
+                                [[ pack.title ]]
+                            </option>
+                        </select>
                     </div>
 
                     <button class="btn register-btn" :disabled="isLoading || !formValid">

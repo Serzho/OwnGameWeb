@@ -9,7 +9,8 @@ document.addEventListener('DOMContentLoaded', () => {
             return {
                 roomName: '',
                 maxPlayers: 4,
-                csvFile: null,
+                selectedPackId: null,
+                packs: [],
                 isLoading: false,
                 errorMessage: '',
                 successMessage: ''
@@ -20,22 +21,34 @@ document.addEventListener('DOMContentLoaded', () => {
                 return this.roomName.length > 0 &&
                     this.maxPlayers >= 2 &&
                     this.maxPlayers <= 6 &&
-                    this.csvFile !== null
+                    this.selectedPackId !== null
             }
         },
+        mounted() {
+            this.loadPacks();
+        },
         methods: {
-            handleFileUpload(event) {
-                const file = event.target.files[0];
-                if(file && file.name.endsWith('.csv')) {
-                    this.csvFile = file;
-                } else {
-                    this.errorMessage = 'Пожалуйста, выберите CSV файл';
-                    this.csvFile = null;
+            async loadPacks() {
+                try {
+                    const response = await fetch('/getallpacks');
+                    const data = await response.json();
+
+                    if (!response.ok) {
+                        throw new Error(data.message || 'Не удалось загрузить паки');
+                    }
+
+                    this.packs = data.packs;
+                    if (this.packs.length === 0) {
+                        this.errorMessage = 'Нет доступных паков вопросов';
+                    }
+                } catch (error) {
+                    this.errorMessage = `Ошибка: ${error.message}`;
+                    console.error('Ошибка загрузки паков:', error);
                 }
             },
 
             async handleSubmit() {
-                if(!this.formValid) {
+                if (!this.formValid) {
                     this.errorMessage = 'Заполните все поля корректно';
                     return;
                 }
@@ -45,19 +58,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 this.successMessage = '';
 
                 try {
-                    const formData = new FormData();
-                    formData.append('roomName', this.roomName);
-                    formData.append('maxPlayers', this.maxPlayers);
-                    formData.append('questionsFile', this.csvFile);
-
-                    const response = await fetch('/creategame', {
+                        const response = await fetch('/creategame', {
                         method: 'POST',
-                        body: formData
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            title: this.roomName,
+                            maxPlayers: this.maxPlayers,
+                            packId: this.selectedPackId
+                        })
                     });
 
                     const data = await response.json();
 
-                    if(!response.ok) {
+                    if (!response.ok) {
                         throw new Error(data.message || 'Ошибка при создании игры');
                     }
 
