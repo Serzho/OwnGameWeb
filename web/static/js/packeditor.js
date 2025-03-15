@@ -16,6 +16,15 @@ document.addEventListener('DOMContentLoaded', () => {
             this.loadPacks();
         },
         methods: {
+            addFromServer() {
+                // Заглушка для будущей реализации
+                console.log('Добавление с сервера');
+            },
+
+            downloadPack(packId) {
+                window.location.href = `/downloadpack/${packId}`;
+            },
+
             async loadPacks() {
                 try {
                     const response = await fetch('/getallpacks');
@@ -51,7 +60,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (!confirm('Удалить пакет?')) return;
 
                 try {
-                    const response = await fetch(`/api/packs/${packId}`, {
+                    const response = await fetch(`/deletepack/${packId}`, {
                         method: 'DELETE'
                     });
 

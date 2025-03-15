@@ -10,7 +10,7 @@ type QuestionPack struct {
 type QuestionPackJson struct {
 	Id      int    `json:"id"`
 	Title   string `json:"title"`
-	IsOwner bool   `json:"IsOwner"`
+	IsOwner bool   `json:"isOwner"`
 }
 
 type QuestionPacksJson struct {

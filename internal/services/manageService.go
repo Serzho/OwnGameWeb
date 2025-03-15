@@ -6,6 +6,7 @@ import (
 	"OwnGameWeb/internal/database"
 	"OwnGameWeb/internal/database/models"
 	"errors"
+	"fmt"
 	"mime/multipart"
 )
 
@@ -64,4 +65,15 @@ func (s *ManageService) GetAllPacks(userId int) (*[]models.QuestionPackJson, err
 	}
 
 	return &jsonPacks, nil
+}
+
+func (s *ManageService) GetPackFile(packId int) (string, error) {
+	pack, err := s.dbController.GetPack(packId)
+	if err != nil {
+		return "", errors.New("get pack from database failed")
+	}
+
+	filename := fmt.Sprintf("%s%s", s.config.Global.CsvPath, pack.Filename)
+
+	return filename, nil
 }

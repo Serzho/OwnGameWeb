@@ -45,6 +45,22 @@ func (d *DbController) GetUser(email string) (*models.User, error) {
 	return &user, err
 }
 
+func (d *DbController) GetPack(packId int) (*models.QuestionPack, error) {
+	var questionPack models.QuestionPack
+	err := pgxscan.Get(context.Background(), d.conn, &questionPack, `
+		SELECT id, title, filename, owner
+		FROM "question_pack"
+		WHERE id = $1
+		LIMIT 1;
+	`, packId)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &questionPack, err
+}
+
 func (d *DbController) GetPassword(email string) (string, error) {
 	user, err := d.GetUser(email)
 	if err != nil {

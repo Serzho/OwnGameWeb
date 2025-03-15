@@ -351,3 +351,45 @@ button:disabled:hover {
         font-size: 1.6rem;
     }
 }
+
+/* Новые стили */
+.header-buttons {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.server-btn {
+    background: #2c5282;
+}
+
+.download-btn {
+    background: #2c5282;
+    padding: 0.3rem 0.6rem;
+}
+
+.delete-btn {
+    background: #e53e3e;
+    padding: 0.3rem 0.6rem;
+    transition: transform 0.2s;
+}
+
+.delete-btn:hover {
+    transform: scale(1.1);
+}
+
+.pack-actions {
+    display: flex;
+    gap: 0.8rem;
+}
+
+/* Адаптация для мобилок */
+@media (max-width: 480px) {
+    .header-buttons {
+        flex-direction: column;
+    }
+
+    .pack-actions button {
+        padding: 0.4rem;
+    }
+}

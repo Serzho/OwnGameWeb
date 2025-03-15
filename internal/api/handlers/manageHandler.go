@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"net/http"
+	"os"
 	"strconv"
 )
 
@@ -94,6 +95,7 @@ func (h *ManageHandler) CreateGame(c *gin.Context) {
 			"code":    http.StatusForbidden,
 			"message": "user id not found",
 		})
+		return
 	}
 
 	maxPlayers, err := strconv.Atoi(c.PostForm("maxPlayers"))
@@ -103,6 +105,7 @@ func (h *ManageHandler) CreateGame(c *gin.Context) {
 			"code":    http.StatusBadRequest,
 			"message": "maxPlayers is required",
 		})
+		return
 	}
 	title := c.PostForm("title")
 
@@ -126,6 +129,7 @@ func (h *ManageHandler) GetAllPacks(c *gin.Context) {
 			"code":    http.StatusForbidden,
 			"message": "user id not found",
 		})
+		return
 	}
 
 	packs, err := h.service.GetAllPacks(userId.(int))
@@ -138,4 +142,50 @@ func (h *ManageHandler) GetAllPacks(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"code": http.StatusOK, "packs": packs})
+}
+
+func (h *ManageHandler) DownloadPack(c *gin.Context) {
+	packId, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    http.StatusBadRequest,
+			"message": "pack id is invalid",
+		})
+		return
+	}
+
+	filepath, err := h.service.GetPackFile(packId)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    http.StatusBadRequest,
+			"message": "cannot get pack file",
+		})
+		return
+	}
+
+	content, err := os.ReadFile(filepath)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    http.StatusBadRequest,
+			"message": "cannot read pack file",
+		})
+		return
+	}
+
+	c.Header("Content-Disposition", "attachment; filename=pack")
+	c.Header("Content-Type", "application/text/plain")
+	c.Header("Accept-Length", fmt.Sprintf("%d", len(content)))
+	_, err = c.Writer.Write(content)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    http.StatusBadRequest,
+			"message": "cannot write pack file",
+		})
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"msg": "Download file successfully",
+	})
+}
+
+func (h *ManageHandler) DeletePack(_ *gin.Context) {
 }

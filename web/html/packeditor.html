@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Редактор наборов | Своя Игра</title>
     <link rel="stylesheet" href="/static/css/styles.css">
-    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/3.5.13/vue.global.min.js"></script>
     <script src="/static/js/packeditor.js"></script>
 </head>
 <body>
@@ -21,13 +21,21 @@
     <main>
 
         <div class="auth-container">
-            <label class="btn add-btn">
-    <span class="add-btn-content">
-        <span class="plus-icon">+</span>
-        Добавить пакет
-    </span>
-                <input type="file" hidden @change="handleFileUpload" accept=".csv">
-            </label>
+            <div class="header-buttons">
+                <label class="btn add-btn">
+                    <span class="add-btn-content">
+                        <span class="plus-icon">+</span>
+                        Загрузить CSV
+                    </span>
+                    <input type="file" hidden @change="handleFileUpload" accept=".csv">
+                </label>
+                <button class="btn add-btn server-btn" @click="addFromServer">
+                    <span class="add-btn-content">
+                        <span class="plus-icon">↓</span>
+                        Добавить с сервера
+                    </span>
+                </button>
+            </div>
             <div v-if="packs.length === 0" class="feature-card">
                 <h3>Пакетов не найдено</h3>
             </div>
@@ -39,8 +47,13 @@
                         <p>ID: [[ pack.id ]]</p>
                     </div>
                     <div class="pack-actions">
-                        <button class="btn edit-btn" @click="editPack(pack.id)">✏️</button>
-                        <button class="btn delete-btn" @click="deletePack(pack.id)">🗑️</button>
+                        <button class="btn edit-btn"
+                                @click="editPack(pack.id)"
+                                v-if="pack.isOwner">✏️</button>
+                        <button class="btn download-btn"
+                                @click="downloadPack(pack.id)">⤓</button>
+                        <button class="btn delete-btn"
+                                @click="deletePack(pack.id)">🗑</button>
                     </div>
                 </div>
             </div>
