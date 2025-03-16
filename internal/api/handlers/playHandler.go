@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"net/http"
-	"strconv"
 )
 
 type PlayHandler struct {
@@ -113,11 +112,11 @@ func (h *PlayHandler) RemovePlayer(c *gin.Context) {
 		})
 		return
 	}
-	playerId, err := strconv.Atoi(jsonMap["userId"].(string))
-	if err != nil {
+	playerId, exists := jsonMap["playerId"].(float64)
+	if !exists {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    http.StatusBadRequest,
-			"message": "user id not found",
+			"message": "player id not found",
 		})
 	}
 	userId, exists := c.Get("userId")
@@ -134,7 +133,7 @@ func (h *PlayHandler) RemovePlayer(c *gin.Context) {
 		return
 	}
 
-	err = h.service.RemovePlayer(gameId.(int), userId.(int), playerId)
+	err = h.service.RemovePlayer(gameId.(int), userId.(int), int(playerId))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    http.StatusBadRequest,

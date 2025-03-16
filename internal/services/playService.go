@@ -75,7 +75,7 @@ func (s *PlayService) GetGameInfo(gameId, userId int) (string, error) {
 	}
 
 	players := make([]models.PlayerJson, 0, len(game.PlayersIds))
-	for id := range game.PlayersIds {
+	for _, id := range game.PlayersIds {
 		user, err := s.dbController.GetUser(id)
 		if err != nil {
 			return "", errors.New("user not found")
@@ -84,7 +84,7 @@ func (s *PlayService) GetGameInfo(gameId, userId int) (string, error) {
 	}
 
 	isHost := userId == game.MasterId
-	gameInfo := &models.GameInfoJson{Title: game.Title, Players: players, MaxPlayers: game.MaxPlayers, IsHost: isHost}
+	gameInfo := &models.GameInfoJson{Title: game.Title, Players: players, MaxPlayers: game.MaxPlayers, IsHost: isHost, InviteCode: game.InviteCode}
 	result, err := json.Marshal(gameInfo)
 	if err != nil {
 		return "", errors.New("json marshal error")

@@ -94,7 +94,7 @@ func (d *DbController) DeletePack(packId int) error {
 		return errors.New("database delete pack failed")
 	}
 
-	_, err = d.pool.Exec(
+	_, err = tx.Exec(
 		context.Background(),
 		`UPDATE "user" SET packs = array_remove(packs, $1::int)
 			WHERE packs @> ARRAY[$1::int]`, packId,
@@ -134,14 +134,14 @@ func (d *DbController) AddUser(name, email, password string) error {
 func (d *DbController) AddGame(title string, inviteCode string, userId int, maxPlayers int, sampleId int) (int, error) {
 
 	var id int
-	err := d.pool.QueryRow(
+	row := d.pool.QueryRow(
 		context.Background(),
 		`INSERT INTO "game" (title, status, invite_code, start_time, master_id, players_ids, max_players, sample)
 			VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id;`,
 		title, "created", inviteCode, time.Now(), userId, "{}", maxPlayers, sampleId,
 	).Scan(&id)
 
-	if err != nil {
+	if row != nil {
 		return 0, errors.New("cannot insert game")
 	}
 
@@ -186,7 +186,7 @@ func (d *DbController) AddPack(userId int, filename string) error {
 		return errors.New("database add pack failed")
 	}
 
-	_, err = d.pool.Exec(
+	_, err = tx.Exec(
 		context.Background(),
 		`UPDATE "user" SET packs = array_append(packs, currval(pg_get_serial_sequence('question_pack', 'id')))
 			WHERE id=$1`,
@@ -231,13 +231,13 @@ func (d *DbController) GetUserPacks(userId int) (*[]models.QuestionPack, error) 
 
 func (d *DbController) AddSample(sample *models.QuestionSample) (int, error) {
 	var id int
-	err := d.pool.QueryRow(
+	row := d.pool.QueryRow(
 		context.Background(),
 		`INSERT INTO "question_sample" (pack, content) VALUES ($1::int, $2) RETURNING id;`,
 		sample.Pack, sample.Content,
 	).Scan(&id)
 
-	if err != nil {
+	if row != nil {
 		return 0, errors.New("insert sample failed")
 	}
 
@@ -293,7 +293,7 @@ func (d *DbController) GetGameByInviteCode(code string) (*models.Game, error) {
 }
 
 func (d *DbController) JoinGame(userId, gameId int) error {
-	err := d.pool.QueryRow(
+	_, err := d.pool.Exec(
 		context.Background(),
 		`UPDATE game SET players_ids = array_append(players_ids, $1::int)
  			WHERE id = $2::int;`,

@@ -15,7 +15,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 gameId: null,
                 isLoading: false,
                 errorMessage: '',
-                updateInterval: null
+                updateInterval: null,
+                inviteCode: ''
             }
         },
         computed: {
@@ -38,12 +39,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     const data = await response.json();
 
                     if (!response.ok) throw new Error(data.message || 'Ошибка загрузки');
-
-                    this.roomName = data.data.title;
-                    this.players = data.data.players;
-                    this.maxPlayers = data.data.maxPlayers;
-                    this.currentPlayers = data.data.players.length;
-                    this.isHost = data.data.isHost;
+                    const jdata = JSON.parse(data.data);
+                    this.roomName =jdata.title;
+                    this.inviteCode = jdata.inviteCode;
+                    this.players = jdata.players;
+                    this.maxPlayers = jdata.maxPlayers;
+                    this.currentPlayers = jdata.players.length;
+                    this.isHost = jdata.isHost;
                 } catch (error) {
                     this.errorMessage = error.message;
                 }
@@ -91,7 +93,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     });
 
                     if (!response.ok) throw new Error('Ошибка запуска игры');
-                    window.location.href = `/game/${this.gameId}/play`;
+                    //window.location.href = `/game/${this.gameId}/play`;
                 } catch (error) {
                     this.errorMessage = error.message;
                 } finally {
