@@ -68,6 +68,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             },
 
+            async leaveGame() {
+                if (!confirm('Вы уверены, что хотите покинуть игру?')) return;
+
+                try {
+                    const response = await fetch(`/play/leave`, {
+                        method: 'POST'
+                    });
+
+                    if (!response.ok) throw new Error('Ошибка выхода из игры');
+                    window.location.href = '/main';
+                } catch (error) {
+                    this.errorMessage = error.message;
+                }
+            },
+
             async cancelGame() {
                 if (!confirm('Вы уверены, что хотите отменить игру?')) return;
 

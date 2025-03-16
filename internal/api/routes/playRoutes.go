@@ -13,6 +13,7 @@ func RegisterPlayRoutes(r *gin.Engine, h *handlers.PlayHandler, m gin.HandlerFun
 	group.GET("/gameinfo", h.GameInfo)
 
 	group.POST("/start", h.StartGame)
+	group.POST("/leave", h.LeaveGame)
 
 	group.DELETE("/game", h.CancelGame)
 	group.DELETE("/removeplayer", h.RemovePlayer)

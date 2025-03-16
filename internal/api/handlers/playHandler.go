@@ -146,3 +146,32 @@ func (h *PlayHandler) RemovePlayer(c *gin.Context) {
 		"code": http.StatusOK,
 	})
 }
+
+func (h *PlayHandler) LeaveGame(c *gin.Context) {
+	userId, exists := c.Get("userId")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"code":    http.StatusUnauthorized,
+			"message": "cannot remove player",
+		})
+	}
+
+	gameId, exists := c.Get("gameId")
+	if !exists {
+		c.Redirect(http.StatusTemporaryRedirect, "/main")
+		return
+	}
+
+	err := h.service.RemovePlayer(gameId.(int), userId.(int), userId.(int))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    http.StatusBadRequest,
+			"message": "cannot remove player",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code": http.StatusOK,
+	})
+}

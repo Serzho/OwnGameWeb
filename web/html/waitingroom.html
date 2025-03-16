@@ -15,7 +15,17 @@
         <div class="logo">СВОЯ ИГРА ONLINE</div>
         <div class="header-right">
             <div class="players-count">[[ currentPlayers ]]/[[ maxPlayers ]] игроков</div>
-            <button class="btn delete-btn" @click="cancelGame">Отменить игру</button>
+            <button
+                    class="btn delete-btn"
+                    @click="cancelGame"
+                    v-if="isHost"
+            >Отменить игру</button>
+
+            <button
+                    class="btn delete-btn"
+                    @click="leaveGame"
+                    v-if="!isHost"
+            >Покинуть игру</button>
         </div>
     </header>
 
@@ -41,6 +51,7 @@
                     class="btn register-btn"
                     @click="startGame"
                     :disabled="!canStart"
+                    v-if="isHost"
             >
                 [[ isLoading ? 'Загрузка...' : 'Начать игру' ]]
             </button>

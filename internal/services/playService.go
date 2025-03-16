@@ -21,7 +21,7 @@ func (s *PlayService) RemovePlayer(gameId, masterId, playerId int) error {
 		return errors.New("game not found")
 	}
 
-	if game.MasterId != masterId {
+	if game.MasterId != masterId && masterId != playerId {
 		return errors.New("master id not match")
 	}
 
