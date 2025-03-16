@@ -7,12 +7,12 @@ import (
 	"errors"
 	"fmt"
 	"github.com/georgysavva/scany/v2/pgxscan"
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"time"
 )
 
 type DbController struct {
-	conn *pgx.Conn
+	pool *pgxpool.Pool
 }
 
 func NewDbController(cfg *config.Config) *DbController {
@@ -21,17 +21,17 @@ func NewDbController(cfg *config.Config) *DbController {
 		cfg.Database.User, cfg.Database.Password, cfg.Database.Host, cfg.Database.Port, cfg.Database.Name,
 	)
 
-	conn, err := pgx.Connect(context.Background(), url)
+	pool, err := pgxpool.New(context.Background(), url)
 	if err != nil {
 		panic(err)
 	}
 
-	return &DbController{conn: conn}
+	return &DbController{pool: pool}
 }
 
 func (d *DbController) GetUserByEmail(email string) (*models.User, error) {
 	var user models.User
-	err := pgxscan.Get(context.Background(), d.conn, &user, `
+	err := pgxscan.Get(context.Background(), d.pool, &user, `
         SELECT id, name, email, password 
         FROM "user"
         WHERE email = $1
@@ -47,7 +47,7 @@ func (d *DbController) GetUserByEmail(email string) (*models.User, error) {
 
 func (d *DbController) GetUser(userId int) (*models.User, error) {
 	var user models.User
-	err := pgxscan.Get(context.Background(), d.conn, &user, `
+	err := pgxscan.Get(context.Background(), d.pool, &user, `
         SELECT id, name, email, password 
         FROM "user"
         WHERE id = $1
@@ -62,7 +62,7 @@ func (d *DbController) GetUser(userId int) (*models.User, error) {
 }
 func (d *DbController) GetPack(packId int) (*models.QuestionPack, error) {
 	var questionPack models.QuestionPack
-	err := pgxscan.Get(context.Background(), d.conn, &questionPack, `
+	err := pgxscan.Get(context.Background(), d.pool, &questionPack, `
 		SELECT id, title, filename, owner
 		FROM "question_pack"
 		WHERE id = $1
@@ -77,7 +77,7 @@ func (d *DbController) GetPack(packId int) (*models.QuestionPack, error) {
 }
 
 func (d *DbController) DeletePack(packId int) error {
-	tx, err := d.conn.Begin(context.Background())
+	tx, err := d.pool.Begin(context.Background())
 	defer func() {
 		_ = tx.Rollback(context.Background())
 	}()
@@ -94,7 +94,7 @@ func (d *DbController) DeletePack(packId int) error {
 		return errors.New("database delete pack failed")
 	}
 
-	_, err = d.conn.Exec(
+	_, err = d.pool.Exec(
 		context.Background(),
 		`UPDATE "user" SET packs = array_remove(packs, $1::int)
 			WHERE packs @> ARRAY[$1::int]`, packId,
@@ -122,7 +122,7 @@ func (d *DbController) GetPassword(email string) (string, error) {
 }
 
 func (d *DbController) AddUser(name, email, password string) error {
-	_, err := d.conn.Exec(
+	_, err := d.pool.Exec(
 		context.Background(),
 		`INSERT INTO "user" (name, email, password) VALUES ($1, $2, $3);`,
 		name, email, password,
@@ -134,7 +134,7 @@ func (d *DbController) AddUser(name, email, password string) error {
 func (d *DbController) AddGame(title string, inviteCode string, userId int, maxPlayers int, sampleId int) (int, error) {
 
 	var id int
-	err := d.conn.QueryRow(
+	err := d.pool.QueryRow(
 		context.Background(),
 		`INSERT INTO "game" (title, status, invite_code, start_time, master_id, players_ids, max_players, sample)
 			VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id;`,
@@ -150,7 +150,7 @@ func (d *DbController) AddGame(title string, inviteCode string, userId int, maxP
 
 func (d *DbController) GetCurrentGameByMasterId(masterId int) (*models.Game, error) {
 	var game models.Game
-	err := pgxscan.Get(context.Background(), d.conn, &game, `
+	err := pgxscan.Get(context.Background(), d.pool, &game, `
         SELECT * FROM "game"
         WHERE master_id = $1 AND status != 'archieved'
         LIMIT 1;
@@ -163,12 +163,12 @@ func (d *DbController) GetCurrentGameByMasterId(masterId int) (*models.Game, err
 	return &game, err
 }
 
-func (d *DbController) Close() error {
-	return d.conn.Close(context.Background())
+func (d *DbController) Close() {
+	d.pool.Close()
 }
 
 func (d *DbController) AddPack(userId int, filename string) error {
-	tx, err := d.conn.Begin(context.Background())
+	tx, err := d.pool.Begin(context.Background())
 	defer func() {
 		_ = tx.Rollback(context.Background())
 	}()
@@ -186,7 +186,7 @@ func (d *DbController) AddPack(userId int, filename string) error {
 		return errors.New("database add pack failed")
 	}
 
-	_, err = d.conn.Exec(
+	_, err = d.pool.Exec(
 		context.Background(),
 		`UPDATE "user" SET packs = array_append(packs, currval(pg_get_serial_sequence('question_pack', 'id')))
 			WHERE id=$1`,
@@ -209,7 +209,7 @@ func (d *DbController) GetUserPacks(userId int) (*[]models.QuestionPack, error) 
 
 	var packs []models.QuestionPack
 
-	rows, err := d.conn.Query(context.Background(), `
+	rows, err := d.pool.Query(context.Background(), `
         SELECT  p.id, title, filename, p.owner  FROM "user" u
 			JOIN LATERAL unnest(packs) AS pack_id ON true
 			JOIN question_pack p ON p.id = pack_id
@@ -231,7 +231,7 @@ func (d *DbController) GetUserPacks(userId int) (*[]models.QuestionPack, error) 
 
 func (d *DbController) AddSample(sample *models.QuestionSample) (int, error) {
 	var id int
-	err := d.conn.QueryRow(
+	err := d.pool.QueryRow(
 		context.Background(),
 		`INSERT INTO "question_sample" (pack, content) VALUES ($1::int, $2) RETURNING id;`,
 		sample.Pack, sample.Content,
@@ -246,7 +246,7 @@ func (d *DbController) AddSample(sample *models.QuestionSample) (int, error) {
 
 func (d *DbController) GetInvites() ([]string, error) {
 	var invites []string
-	rows, err := d.conn.Query(
+	rows, err := d.pool.Query(
 		context.Background(),
 		`SELECT invite_code FROM "game" WHERE status = 'created';`,
 	)
@@ -264,7 +264,7 @@ func (d *DbController) GetInvites() ([]string, error) {
 
 func (d *DbController) GetGame(gameId int) (*models.Game, error) {
 	var game models.Game
-	err := pgxscan.Get(context.Background(), d.conn, &game, `
+	err := pgxscan.Get(context.Background(), d.pool, &game, `
         SELECT * FROM "game"
         WHERE id = $1
         LIMIT 1;
@@ -279,7 +279,7 @@ func (d *DbController) GetGame(gameId int) (*models.Game, error) {
 
 func (d *DbController) GetGameByInviteCode(code string) (*models.Game, error) {
 	var game models.Game
-	err := pgxscan.Get(context.Background(), d.conn, &game, `
+	err := pgxscan.Get(context.Background(), d.pool, &game, `
         SELECT * FROM "game"
         WHERE invite_code = $1 and status = 'created'
         LIMIT 1;
@@ -293,7 +293,7 @@ func (d *DbController) GetGameByInviteCode(code string) (*models.Game, error) {
 }
 
 func (d *DbController) JoinGame(userId, gameId int) error {
-	err := d.conn.QueryRow(
+	err := d.pool.QueryRow(
 		context.Background(),
 		`UPDATE game SET players_ids = array_append(players_ids, $1::int)
  			WHERE id = $2::int;`,
@@ -307,7 +307,7 @@ func (d *DbController) JoinGame(userId, gameId int) error {
 }
 
 func (d *DbController) SetGameStatus(gameId int, status string) error {
-	err := d.conn.QueryRow(
+	err := d.pool.QueryRow(
 		context.Background(),
 		`UPDATE game SET status = $1 
  			WHERE id = $2::int;`,
@@ -321,7 +321,7 @@ func (d *DbController) SetGameStatus(gameId int, status string) error {
 }
 
 func (d *DbController) DeleteGame(gameId int) error {
-	_, err := d.conn.Exec(context.Background(),
+	_, err := d.pool.Exec(context.Background(),
 		`DELETE FROM "game" WHERE id = $1;`, gameId,
 	)
 
@@ -333,7 +333,7 @@ func (d *DbController) DeleteGame(gameId int) error {
 }
 
 func (d *DbController) RemovePlayer(gameId, userId int) error {
-	err := d.conn.QueryRow(
+	err := d.pool.QueryRow(
 		context.Background(),
 		`UPDATE game SET players_ids = array_remove(players_ids, $1::int)
  			WHERE id = $2::int;`,

@@ -27,6 +27,7 @@ func main() {
 
 	dbController := database.NewDbController(cfg)
 
+	defer dbController.Close()
 	authService := services.NewAuthService(dbController, cfg)
 	manageService := services.NewManageService(dbController, cfg)
 	playService := services.NewPlayService(dbController)
