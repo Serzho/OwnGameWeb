@@ -78,7 +78,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     this.successMessage = 'Игра успешно создана! Перенаправление...';
                     setTimeout(() => {
-                        window.location.href = `/game/${data.gameId}`;
+                        window.location.href = `/play/waitingroom`;
                     }, 2000);
 
                 } catch (error) {

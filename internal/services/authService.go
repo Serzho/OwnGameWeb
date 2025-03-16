@@ -19,7 +19,7 @@ func NewAuthService(c *database.DbController, config *config.Config) *AuthServic
 
 func (s *AuthService) SignIn(email, password string) (int, error) {
 	preparedEmail := strings.ToLower(strings.TrimSpace(email))
-	user, err := s.dbController.GetUser(preparedEmail)
+	user, err := s.dbController.GetUserByEmail(preparedEmail)
 
 	if err != nil {
 		return 0, errors.New("invalid email")
@@ -37,7 +37,7 @@ func (s *AuthService) SignUp(name, email, password string) error {
 	preparedEmail := strings.ToLower(strings.TrimSpace(email))
 	preparedPassword := strings.TrimSpace(password)
 
-	_, err := s.dbController.GetUser(preparedEmail)
+	_, err := s.dbController.GetUserByEmail(preparedEmail)
 	if err == nil {
 		return errors.New("user already exists")
 	}

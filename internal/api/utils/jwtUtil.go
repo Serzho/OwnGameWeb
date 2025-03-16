@@ -7,7 +7,8 @@ import (
 )
 
 type UserClaims struct {
-	Id int `json:"id"`
+	Id     int `json:"id"`
+	GameId int `json:"gameId"`
 	jwt.RegisteredClaims
 }
 
@@ -46,8 +47,10 @@ func JwtParse(tokenString string, secretPhrase string) (*UserClaims, error) {
 	return claims, nil
 }
 
-func JwtCreate(userId int, secretPhrase string) (string, error) {
-	claims := jwt.NewWithClaims(jwt.SigningMethodHS256, UserClaims{Id: userId, RegisteredClaims: jwt.RegisteredClaims{}})
+func JwtCreate(userId int, gameId int, secretPhrase string) (string, error) {
+	claims := jwt.NewWithClaims(
+		jwt.SigningMethodHS256, UserClaims{Id: userId, GameId: gameId, RegisteredClaims: jwt.RegisteredClaims{}},
+	)
 
 	tokenString, err := claims.SignedString([]byte(secretPhrase))
 

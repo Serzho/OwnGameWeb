@@ -37,7 +37,7 @@ func (h *AuthHandler) SignIn(c *gin.Context) {
 		return
 	}
 
-	token, err := utils.JwtCreate(userId, h.service.Cfg.Global.SecretPhrase)
+	token, err := utils.JwtCreate(userId, -1, h.service.Cfg.Global.SecretPhrase)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"code":    http.StatusUnauthorized,

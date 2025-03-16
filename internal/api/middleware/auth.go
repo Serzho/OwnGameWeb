@@ -35,6 +35,9 @@ func Auth(cfg *config.Config) gin.HandlerFunc {
 		fmt.Printf("Claims: %+v\n", claims)
 
 		c.Set("userId", claims.Id)
+		if claims.GameId != -1 {
+			c.Set("gameId", claims.GameId)
+		}
 		c.Next()
 	}
 }

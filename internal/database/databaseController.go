@@ -29,7 +29,7 @@ func NewDbController(cfg *config.Config) *DbController {
 	return &DbController{conn: conn}
 }
 
-func (d *DbController) GetUser(email string) (*models.User, error) {
+func (d *DbController) GetUserByEmail(email string) (*models.User, error) {
 	var user models.User
 	err := pgxscan.Get(context.Background(), d.conn, &user, `
         SELECT id, name, email, password 
@@ -45,6 +45,21 @@ func (d *DbController) GetUser(email string) (*models.User, error) {
 	return &user, err
 }
 
+func (d *DbController) GetUser(userId int) (*models.User, error) {
+	var user models.User
+	err := pgxscan.Get(context.Background(), d.conn, &user, `
+        SELECT id, name, email, password 
+        FROM "user"
+        WHERE id = $1
+        LIMIT 1;
+    `, userId)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &user, err
+}
 func (d *DbController) GetPack(packId int) (*models.QuestionPack, error) {
 	var questionPack models.QuestionPack
 	err := pgxscan.Get(context.Background(), d.conn, &questionPack, `
@@ -98,7 +113,7 @@ func (d *DbController) DeletePack(packId int) error {
 }
 
 func (d *DbController) GetPassword(email string) (string, error) {
-	user, err := d.GetUser(email)
+	user, err := d.GetUserByEmail(email)
 	if err != nil {
 		return "", err
 	}
@@ -116,15 +131,21 @@ func (d *DbController) AddUser(name, email, password string) error {
 	return err
 }
 
-func (d *DbController) AddGame(title string, inviteCode string, userId int, maxPlayers int, sampleId int) error {
-	_, err := d.conn.Exec(
+func (d *DbController) AddGame(title string, inviteCode string, userId int, maxPlayers int, sampleId int) (int, error) {
+
+	var id int
+	err := d.conn.QueryRow(
 		context.Background(),
 		`INSERT INTO "game" (title, status, invite_code, start_time, master_id, players_ids, max_players, sample)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, $8);`,
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id;`,
 		title, "created", inviteCode, time.Now(), userId, "{}", maxPlayers, sampleId,
-	)
+	).Scan(&id)
 
-	return err
+	if err != nil {
+		return 0, errors.New("cannot insert game")
+	}
+
+	return id, nil
 }
 
 func (d *DbController) GetCurrentGameByMasterId(masterId int) (*models.Game, error) {
@@ -239,4 +260,88 @@ func (d *DbController) GetInvites() ([]string, error) {
 	}
 
 	return invites, nil
+}
+
+func (d *DbController) GetGame(gameId int) (*models.Game, error) {
+	var game models.Game
+	err := pgxscan.Get(context.Background(), d.conn, &game, `
+        SELECT * FROM "game"
+        WHERE id = $1
+        LIMIT 1;
+    `, gameId)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &game, err
+}
+
+func (d *DbController) GetGameByInviteCode(code string) (*models.Game, error) {
+	var game models.Game
+	err := pgxscan.Get(context.Background(), d.conn, &game, `
+        SELECT * FROM "game"
+        WHERE invite_code = $1 and status = 'created'
+        LIMIT 1;
+    `, code)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &game, err
+}
+
+func (d *DbController) JoinGame(userId, gameId int) error {
+	err := d.conn.QueryRow(
+		context.Background(),
+		`UPDATE game SET players_ids = array_append(players_ids, $1::int)
+ 			WHERE id = $2::int;`,
+		userId, gameId,
+	)
+	if err != nil {
+		return errors.New("join game failed")
+	}
+	return nil
+
+}
+
+func (d *DbController) SetGameStatus(gameId int, status string) error {
+	err := d.conn.QueryRow(
+		context.Background(),
+		`UPDATE game SET status = $1 
+ 			WHERE id = $2::int;`,
+		status, gameId,
+	)
+
+	if err != nil {
+		return errors.New("update game status failed")
+	}
+	return nil
+}
+
+func (d *DbController) DeleteGame(gameId int) error {
+	_, err := d.conn.Exec(context.Background(),
+		`DELETE FROM "game" WHERE id = $1;`, gameId,
+	)
+
+	if err != nil {
+		return errors.New("delete game failed")
+	}
+
+	return nil
+}
+
+func (d *DbController) RemovePlayer(gameId, userId int) error {
+	err := d.conn.QueryRow(
+		context.Background(),
+		`UPDATE game SET players_ids = array_remove(players_ids, $1::int)
+ 			WHERE id = $2::int;`,
+		userId, gameId,
+	)
+
+	if err != nil {
+		return errors.New("update game players failed")
+	}
+	return nil
 }

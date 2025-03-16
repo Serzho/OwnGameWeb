@@ -56,7 +56,7 @@ CREATE TABLE "game"(
 -- CONSTRAINTS FOR GAME TABLE
 ALTER TABLE "game"
     ADD CONSTRAINT game_title_length CHECK (LENGTH(title) >= 5),
-    ADD CONSTRAINT game_status_valid CHECK (status ~ 'created|inprocess|firststage|secondstage|thirdstage|finished|archieved'),
+    ADD CONSTRAINT game_status_valid CHECK (status ~ 'created|firststage|secondstage|thirdstage|finished|archieved'),
     ADD CONSTRAINT game_invite_code_valid CHECK (invite_code ~ '[a-zA-Z0-9]+'),
     ADD CONSTRAINT game_max_users_valid CHECK (max_players > 1 AND max_players <= 6),
     ADD CONSTRAINT game_users_count CHECK (array_length(players_ids, 1) <= max_players);

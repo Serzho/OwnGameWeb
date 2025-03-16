@@ -48,8 +48,16 @@ func (h *ManageHandler) JoinGame(c *gin.Context) {
 		return
 	}
 
+	userId, exists := c.Get("userId")
+	if !exists {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    http.StatusBadRequest,
+			"message": "user id not found",
+		})
+	}
+
 	code := jsonMap["code"].(string)
-	err = h.service.JoinGame(code)
+	gameId, err := h.service.JoinGame(code, userId.(int))
 
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -59,6 +67,15 @@ func (h *ManageHandler) JoinGame(c *gin.Context) {
 		return
 	}
 
+	token, err := utils.JwtCreate(userId.(int), gameId, h.service.Cfg.Global.SecretPhrase)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"code":    http.StatusUnauthorized,
+			"message": fmt.Sprintf("%v", err),
+		})
+		return
+	}
+	c.SetCookie("token", token, 60*60*24, "/", "", false, true)
 	c.JSON(http.StatusOK, gin.H{})
 }
 
@@ -102,7 +119,7 @@ func (h *ManageHandler) CreateGame(c *gin.Context) {
 
 	userId := c.GetInt("userId")
 
-	err = h.service.CreateGame(userId, packId, title, maxPlayers)
+	gameId, err := h.service.CreateGame(userId, packId, title, maxPlayers)
 
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -112,7 +129,17 @@ func (h *ManageHandler) CreateGame(c *gin.Context) {
 		return
 	}
 
-	c.Redirect(http.StatusTemporaryRedirect, "/play/")
+	token, err := utils.JwtCreate(userId, gameId, h.service.Cfg.Global.SecretPhrase)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"code":    http.StatusUnauthorized,
+			"message": fmt.Sprintf("%v", err),
+		})
+		return
+	}
+	c.SetCookie("token", token, 60*60*24, "/", "", false, true)
+
+	c.JSON(http.StatusOK, gin.H{})
 }
 
 func (h *ManageHandler) GetAllPacks(c *gin.Context) {

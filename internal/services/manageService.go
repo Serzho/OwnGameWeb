@@ -12,59 +12,69 @@ import (
 
 type ManageService struct {
 	dbController *database.DbController
-	config       *config.Config
+	Cfg          *config.Config
 }
 
 func NewManageService(c *database.DbController, cfg *config.Config) *ManageService {
-	return &ManageService{dbController: c, config: cfg}
+	return &ManageService{dbController: c, Cfg: cfg}
 }
 
-func (s *ManageService) JoinGame(_ string) error {
-	return errors.New("not implemented")
+func (s *ManageService) JoinGame(code string, userId int) (int, error) {
+	game, err := s.dbController.GetGameByInviteCode(code)
+	if err != nil {
+		return 0, errors.New("cannot find game")
+	}
+
+	err = s.dbController.JoinGame(userId, game.Id)
+
+	if err != nil {
+		return 0, errors.New("failed to join game")
+	}
+	return game.Id, nil
 }
 
-func (s *ManageService) CreateGame(userId int, packId int, title string, maxPlayers int) error {
+func (s *ManageService) CreateGame(userId int, packId int, title string, maxPlayers int) (int, error) {
 	_, err := s.dbController.GetCurrentGameByMasterId(userId)
 	if err == nil {
-		return errors.New("player already playing")
+		return 0, errors.New("player already playing")
 	}
 
 	pack, err := s.dbController.GetPack(packId)
 
 	if err != nil {
-		return errors.New("pack not found")
+		return 0, errors.New("pack not found")
 	}
 
-	sample, err := utils.GenerateSample(pack, s.config)
+	sample, err := utils.GenerateSample(pack, s.Cfg)
 	if err != nil {
-		return errors.New("generate sample failed")
+		return 0, errors.New("generate sample failed")
 	}
 
 	sampleId, err := s.dbController.AddSample(sample)
 	if err != nil {
-		return errors.New("add sample failed")
+		return 0, errors.New("add sample failed")
 	}
 
 	invitesList, err := s.dbController.GetInvites()
 	if err != nil {
-		return errors.New("get invites failed")
+		return 0, errors.New("get invites failed")
 	}
 
 	inviteCode, err := utils.GenerateInviteCode(invitesList)
 	if err != nil {
-		return errors.New("generate invite code failed")
+		return 0, errors.New("generate invite code failed")
 	}
-	err = s.dbController.AddGame(title, inviteCode, userId, maxPlayers, sampleId)
+	gameId, err := s.dbController.AddGame(title, inviteCode, userId, maxPlayers, sampleId)
 
 	if err != nil {
-		return err
+		return 0, err
 	}
-	return nil
+	return gameId, nil
 
 }
 
 func (s *ManageService) AddPack(userId int, file multipart.File, header *multipart.FileHeader) error {
-	filename, err := utils.SavePackGame(s.config, file, header)
+	filename, err := utils.SavePackGame(s.Cfg, file, header)
 	if err != nil {
 		return errors.New("file save failed")
 	}
@@ -98,7 +108,7 @@ func (s *ManageService) GetPackFile(packId int) (string, error) {
 		return "", errors.New("get pack from database failed")
 	}
 
-	filename := fmt.Sprintf("%s%s", s.config.Global.CsvPath, pack.Filename)
+	filename := fmt.Sprintf("%s%s", s.Cfg.Global.CsvPath, pack.Filename)
 
 	return filename, nil
 }
@@ -117,7 +127,7 @@ func (s *ManageService) DeletePack(userId int, packId int) error {
 		return errors.New("database delete failed")
 	}
 
-	err = utils.DeletePackGame(pack.Filename, s.config)
+	err = utils.DeletePackGame(pack.Filename, s.Cfg)
 	if err != nil {
 		return err
 	}
