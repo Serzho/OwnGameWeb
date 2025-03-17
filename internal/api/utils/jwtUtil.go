@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/golang-jwt/jwt/v5"
+	"log/slog"
 )
 
 type UserClaims struct {
@@ -16,7 +17,7 @@ func JwtParse(tokenString string, secretPhrase string) (*UserClaims, error) {
 	JwtParseErr := fmt.Errorf("jwt parse error")
 	token, err := jwt.ParseWithClaims(tokenString, &UserClaims{}, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			fmt.Printf("unexpected signing method: %v\n", token.Header["alg"])
+			slog.Warn("unexpected signing method", "alg", token.Header["alg"])
 			return nil, JwtParseErr
 		}
 		return []byte(secretPhrase), nil
@@ -25,13 +26,13 @@ func JwtParse(tokenString string, secretPhrase string) (*UserClaims, error) {
 	if err != nil || !token.Valid {
 		switch {
 		case errors.Is(err, jwt.ErrTokenMalformed):
-			fmt.Println("Invalid token format")
+			slog.Warn("Invalid token format")
 		case errors.Is(err, jwt.ErrTokenExpired):
-			fmt.Println("Token expired")
+			slog.Warn("Token expired")
 		case errors.Is(err, jwt.ErrTokenNotValidYet):
-			fmt.Println("Token not active yet")
+			slog.Warn("Token not active yet")
 		default:
-			fmt.Printf("Validation error: %v\n", err)
+			slog.Error("Validation error: ", "err", err)
 		}
 
 		return nil, JwtParseErr
@@ -40,10 +41,11 @@ func JwtParse(tokenString string, secretPhrase string) (*UserClaims, error) {
 	claims, ok := token.Claims.(*UserClaims)
 
 	if !ok {
-		fmt.Println("Invalid token claims")
+		slog.Warn("Invalid token claims", "claims", token.Claims)
 		return nil, JwtParseErr
 	}
 
+	slog.Info("UserClaims", "claims", claims)
 	return claims, nil
 }
 
@@ -51,7 +53,7 @@ func JwtCreate(userId int, gameId int, secretPhrase string) (string, error) {
 	claims := jwt.NewWithClaims(
 		jwt.SigningMethodHS256, UserClaims{Id: userId, GameId: gameId, RegisteredClaims: jwt.RegisteredClaims{}},
 	)
-
+	slog.Info("Creating jwt for claims", "claims", claims)
 	tokenString, err := claims.SignedString([]byte(secretPhrase))
 
 	if err != nil {

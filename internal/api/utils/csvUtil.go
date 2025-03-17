@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"iter"
+	"log/slog"
 	"maps"
 	"mime/multipart"
 	"os"
@@ -28,11 +29,13 @@ func SavePackGame(cfg *config.Config, file multipart.File, header *multipart.Fil
 
 	filepath := fmt.Sprintf("%s%s", cfg.Global.CsvPath, filename)
 
+	slog.Info("Create Pack File: ", "filename", filepath)
 	dst, err := os.Create(filepath)
 	if err != nil {
 		return "", errors.New("create file error")
 	}
 
+	slog.Info("Writing File: ", "filename", filepath)
 	_, err = io.Copy(dst, file)
 
 	if err != nil {
@@ -44,6 +47,7 @@ func SavePackGame(cfg *config.Config, file multipart.File, header *multipart.Fil
 	_ = file.Close()
 	_ = dst.Close()
 
+	slog.Info("Successfully pack game saved")
 	return filename, nil
 }
 
@@ -56,6 +60,7 @@ func DeletePackGame(filename string, cfg *config.Config) error {
 }
 
 func ParseQuestions(filename string) (map[int]map[int]models.ThemeJson, error) {
+	slog.Info("Parse Questions: ", "filename", filename)
 	file, err := os.Open(filename)
 	if err != nil {
 		return nil, errors.New("open file failed")
@@ -69,8 +74,9 @@ func ParseQuestions(filename string) (map[int]map[int]models.ThemeJson, error) {
 
 	reader := csv.NewReader(file)
 	reader.Comma = ','
-	reader.FieldsPerRecord = -1 // Разрешаем разное количество полей
+	reader.FieldsPerRecord = -1
 
+	slog.Info("Reading file: ", "filename", filename)
 	records, err := reader.ReadAll()
 
 	if err != nil {
@@ -79,6 +85,7 @@ func ParseQuestions(filename string) (map[int]map[int]models.ThemeJson, error) {
 
 	rounds := make(map[int]map[int]models.ThemeJson)
 
+	slog.Info("Parse questions: ", "records", len(records)-1)
 	for _, record := range records[1:] {
 		if record[0] != "1" && record[0] != "2" && record[0] != "3" {
 			continue
@@ -129,6 +136,7 @@ func ParseQuestions(filename string) (map[int]map[int]models.ThemeJson, error) {
 
 	}
 
+	slog.Info("Successfully parsed questions")
 	return rounds, nil
 }
 
@@ -141,6 +149,7 @@ func GenerateSample(pack *models.QuestionPack, cfg *config.Config) (*models.Ques
 		return slice
 	}
 
+	slog.Info("Generating Sample: ", "packId", pack.Id)
 	rounds, err := ParseQuestions(fmt.Sprintf("%s%s", cfg.Global.CsvPath, pack.Filename))
 	if err != nil {
 		return nil, errors.New("parse questions failed")
@@ -251,6 +260,7 @@ func GenerateSample(pack *models.QuestionPack, cfg *config.Config) (*models.Ques
 		return nil, errors.New("marshal json failed")
 	}
 
+	slog.Info("Successfully generated sample: ", "packId", pack.Id)
 	return &models.QuestionSample{
 		Id:      0,
 		Pack:    pack.Id,
