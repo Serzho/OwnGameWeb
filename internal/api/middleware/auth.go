@@ -4,22 +4,22 @@ import (
 	"OwnGameWeb/config"
 	"OwnGameWeb/internal/api/utils"
 	"errors"
-	"fmt"
 	"github.com/gin-gonic/gin"
+	"log/slog"
 	"net/http"
 )
 
 func Auth(cfg *config.Config) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		redirectToLogin := func() {
-			fmt.Println("Redirect to login page")
+			slog.Warn("redirecting to login page")
 			c.Redirect(http.StatusTemporaryRedirect, "/auth/signin")
 			c.Abort()
 		}
 
 		tokenString, err := c.Cookie("token")
 		if errors.Is(err, http.ErrNoCookie) {
-			fmt.Println("No cookies at request!")
+			slog.Warn("No token cookie")
 			redirectToLogin()
 			return
 		}
@@ -27,12 +27,12 @@ func Auth(cfg *config.Config) gin.HandlerFunc {
 		claims, err := utils.JwtParse(tokenString, cfg.Global.SecretPhrase)
 
 		if err != nil {
-			fmt.Println(err)
+			slog.Warn("Invalid token", "err", err)
 			redirectToLogin()
 			return
 		}
 
-		fmt.Printf("Claims: %+v\n", claims)
+		slog.Info("Setting claims", "claims", claims)
 
 		c.Set("userId", claims.Id)
 		if claims.GameId != -1 {

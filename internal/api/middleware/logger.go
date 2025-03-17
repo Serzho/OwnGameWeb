@@ -2,7 +2,7 @@ package middleware
 
 import (
 	"github.com/gin-gonic/gin"
-	"log"
+	"log/slog"
 	"time"
 )
 
@@ -12,13 +12,22 @@ func Logger() gin.HandlerFunc {
 
 		c.Next()
 
-		latency := time.Since(start)
-		log.Printf(
-			"[%s] %s | %s | %s",
-			c.Request.Method,
-			c.Request.URL.Path,
-			c.ClientIP(),
-			latency,
+		end := time.Now()
+
+		if c.Writer.Status() >= 500 {
+			slog.Error(c.Errors.ByType(gin.ErrorTypePrivate).String())
+			return
+		}
+
+		slog.Info(
+			"HTTP request",
+			"method", c.Request.Method,
+			"path", c.Request.URL.Path,
+			"statusCode", c.Writer.Status(),
+			"latency", end.Sub(start),
+			"clientIP", c.ClientIP(),
+			"body", c.Request.Body,
+			"params", c.Params,
 		)
 	}
 }

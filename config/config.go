@@ -1,8 +1,8 @@
 package config
 
 import (
-	"fmt"
 	"github.com/joho/godotenv"
+	"log/slog"
 	"os"
 	"strconv"
 )
@@ -24,7 +24,7 @@ type DatabaseConfig struct {
 
 type GlobalConfig struct {
 	SecretPhrase string
-	LoggerLevel  string
+	LoggerLevel  int
 	CsvPath      string
 }
 
@@ -37,26 +37,28 @@ func getStringEnv(name string, defaultVal string) string {
 	if value, exists := os.LookupEnv(name); exists {
 		return value
 	}
-	fmt.Printf("Environment variable %s is missing.\n", name)
+	slog.Warn("Environment variable is missing", "name", name)
 	return defaultVal
 }
 
 func getIntEnv(name string, defaultVal int) int {
 	valueStr, exists := os.LookupEnv(name)
 	if !exists {
-		fmt.Printf("Environment variable %s is missing.\n", name)
+		slog.Warn("Environment variable is missing", "name", name)
 		return defaultVal
 	}
 	if value, err := strconv.Atoi(valueStr); err == nil {
 		return value
 	}
-	fmt.Printf("Environment variable %s has incorrect value %s. Expected type - int\n", name, valueStr)
+	slog.Error("Environment variable has incorrect value. Expected type - int\n", "name", name, "value", valueStr)
 	return defaultVal
 }
 
 func Load() *Config {
+	slog.Info("Loading config...")
+
 	if err := godotenv.Load(); err != nil {
-		fmt.Println("No .env file found")
+		slog.Warn("No .env file found")
 	}
 	return &Config{
 		Server: ServerConfig{
@@ -73,7 +75,7 @@ func Load() *Config {
 		},
 		Global: GlobalConfig{
 			SecretPhrase: getStringEnv("SECRET_PHRASE", "secret"),
-			LoggerLevel:  getStringEnv("LOGGER_LEVEL", "info"),
+			LoggerLevel:  getIntEnv("LOGGER_LEVEL", -4),
 			CsvPath:      getStringEnv("CSV_PATH", "./pack/"),
 		}}
 }
