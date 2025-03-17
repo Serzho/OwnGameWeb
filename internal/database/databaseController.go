@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"github.com/georgysavva/scany/v2/pgxscan"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"log/slog"
 	"time"
 )
 
@@ -29,6 +30,10 @@ func NewDbController(cfg *config.Config) *DbController {
 	return &DbController{pool: pool}
 }
 
+func (d *DbController) Close() {
+	d.pool.Close()
+}
+
 func (d *DbController) GetUserByEmail(email string) (*models.User, error) {
 	var user models.User
 	err := pgxscan.Get(context.Background(), d.pool, &user, `
@@ -39,9 +44,11 @@ func (d *DbController) GetUserByEmail(email string) (*models.User, error) {
     `, email)
 
 	if err != nil {
+		slog.Warn("Error getting user by email", "error", err, "email", email)
 		return nil, err
 	}
 
+	slog.Info("User found", "email", email, "user", user)
 	return &user, err
 }
 
@@ -55,11 +62,14 @@ func (d *DbController) GetUser(userId int) (*models.User, error) {
     `, userId)
 
 	if err != nil {
+		slog.Warn("Error getting user", "error", err, "id", userId)
 		return nil, err
 	}
 
+	slog.Info("User found", "id", userId, "user", user)
 	return &user, err
 }
+
 func (d *DbController) GetPack(packId int) (*models.QuestionPack, error) {
 	var questionPack models.QuestionPack
 	err := pgxscan.Get(context.Background(), d.pool, &questionPack, `
@@ -70,19 +80,23 @@ func (d *DbController) GetPack(packId int) (*models.QuestionPack, error) {
 	`, packId)
 
 	if err != nil {
+		slog.Warn("Error getting pack", "error", err, "id", packId)
 		return nil, err
 	}
 
+	slog.Info("QuestionPack found", "id", packId, "questionPack", questionPack)
 	return &questionPack, err
 }
 
 func (d *DbController) DeletePack(packId int) error {
+	slog.Info("Deleting pack", "id", packId)
 	tx, err := d.pool.Begin(context.Background())
 	defer func() {
 		_ = tx.Rollback(context.Background())
 	}()
 
 	if err != nil {
+		slog.Warn("Error begin transaction", "error", err)
 		return errors.New("transaction start failed")
 	}
 
@@ -91,6 +105,7 @@ func (d *DbController) DeletePack(packId int) error {
 	)
 
 	if err != nil {
+		slog.Warn("Error delete pack", "error", err)
 		return errors.New("database delete pack failed")
 	}
 
@@ -100,15 +115,18 @@ func (d *DbController) DeletePack(packId int) error {
 			WHERE packs @> ARRAY[$1::int]`, packId,
 	)
 	if err != nil {
+		slog.Warn("Error removing pack from user", "error", err)
 		return errors.New("removing packs from user failed")
 	}
 
 	err = tx.Commit(context.Background())
 
 	if err != nil {
+		slog.Warn("Error commit transaction", "error", err, "id", packId)
 		return errors.New("transaction commit failed")
 	}
 
+	slog.Info("Pack deleted", "id", packId)
 	return nil
 }
 
@@ -128,11 +146,16 @@ func (d *DbController) AddUser(name, email, password string) error {
 		name, email, password,
 	)
 
-	return err
+	if err != nil {
+		slog.Warn("Error adding user", "error", err, "email", email, "name", name, "password", password)
+		return errors.New("database add user failed")
+	}
+
+	slog.Info("Added user", "email", email, "name", name, "password", password)
+	return nil
 }
 
 func (d *DbController) AddGame(title string, inviteCode string, userId int, maxPlayers int, sampleId int) (int, error) {
-
 	var id int
 	row := d.pool.QueryRow(
 		context.Background(),
@@ -142,9 +165,11 @@ func (d *DbController) AddGame(title string, inviteCode string, userId int, maxP
 	).Scan(&id)
 
 	if row != nil {
+		slog.Warn("Error adding game", "error", row, "title", title, "inviteCode", inviteCode, "UserId", userId, "maxPlayers", maxPlayers, "sample", sampleId)
 		return 0, errors.New("cannot insert game")
 	}
 
+	slog.Info("Added game", "id", id)
 	return id, nil
 }
 
@@ -157,14 +182,12 @@ func (d *DbController) GetCurrentGameByMasterId(masterId int) (*models.Game, err
     `, masterId)
 
 	if err != nil {
+		slog.Warn("Error getting game by masterId", "error", err, "masterId", masterId)
 		return nil, err
 	}
 
+	slog.Info("Game found", "masterId", masterId, "game", game)
 	return &game, err
-}
-
-func (d *DbController) Close() {
-	d.pool.Close()
 }
 
 func (d *DbController) AddPack(userId int, filename string) error {
@@ -174,6 +197,7 @@ func (d *DbController) AddPack(userId int, filename string) error {
 	}()
 
 	if err != nil {
+		slog.Warn("Error begin transaction", "error", err, "id", userId, "filename", filename)
 		return errors.New("transaction start failed")
 	}
 
@@ -183,6 +207,7 @@ func (d *DbController) AddPack(userId int, filename string) error {
 	)
 
 	if err != nil {
+		slog.Warn("Error adding pack", "error", err, "id", userId, "filename", filename)
 		return errors.New("database add pack failed")
 	}
 
@@ -193,20 +218,22 @@ func (d *DbController) AddPack(userId int, filename string) error {
 		userId,
 	)
 	if err != nil {
+		slog.Warn("Error adding pack to user", "error", err, "id", userId, "filename", filename)
 		return errors.New("database add pack to user failed")
 	}
 
 	err = tx.Commit(context.Background())
 
 	if err != nil {
+		slog.Warn("Error commit transaction", "error", err, "id", userId, "filename", filename)
 		return errors.New("transaction commit failed")
 	}
 
+	slog.Info("Added pack", "id", userId, "filename", filename)
 	return nil
 }
 
 func (d *DbController) GetUserPacks(userId int) (*[]models.QuestionPack, error) {
-
 	var packs []models.QuestionPack
 
 	rows, err := d.pool.Query(context.Background(), `
@@ -217,15 +244,18 @@ func (d *DbController) GetUserPacks(userId int) (*[]models.QuestionPack, error) 
     `, userId)
 
 	if err != nil {
+		slog.Warn("Error getting user packs", "error", err, "id", userId)
 		return nil, errors.New("query error")
 	}
 
 	err = pgxscan.ScanAll(&packs, rows)
 
 	if err != nil {
-		return nil, err
+		slog.Warn("Error getting user packs", "error", err, "id", userId)
+		return nil, errors.New("error getting user packs")
 	}
 
+	slog.Info("Get user packs", "id", userId, "packs", packs)
 	return &packs, err
 }
 
@@ -238,9 +268,11 @@ func (d *DbController) AddSample(sample *models.QuestionSample) (int, error) {
 	).Scan(&id)
 
 	if row != nil {
+		slog.Warn("Error adding sample", "error", row, "sample", sample)
 		return 0, errors.New("insert sample failed")
 	}
 
+	slog.Info("Added sample", "id", id)
 	return id, nil
 }
 
@@ -251,14 +283,17 @@ func (d *DbController) GetInvites() ([]string, error) {
 		`SELECT invite_code FROM "game" WHERE status = 'created';`,
 	)
 	if err != nil {
+		slog.Warn("Error getting invites", "error", err)
 		return nil, errors.New("get invites failed")
 	}
 
 	err = pgxscan.ScanAll(&invites, rows)
 	if err != nil {
+		slog.Warn("Error getting invites", "error", err)
 		return nil, errors.New("scan invites failed")
 	}
 
+	slog.Info("Get invites", "invites", invites)
 	return invites, nil
 }
 
@@ -271,9 +306,11 @@ func (d *DbController) GetGame(gameId int) (*models.Game, error) {
     `, gameId)
 
 	if err != nil {
+		slog.Warn("Error getting game", "error", err, "id", gameId)
 		return nil, err
 	}
 
+	slog.Info("Game found", "id", gameId)
 	return &game, err
 }
 
@@ -286,9 +323,11 @@ func (d *DbController) GetGameByInviteCode(code string) (*models.Game, error) {
     `, code)
 
 	if err != nil {
+		slog.Warn("Error getting game by invite code", "error", err, "code", code)
 		return nil, err
 	}
 
+	slog.Info("Get game by invite code", "game", game, "code", code)
 	return &game, err
 }
 
@@ -300,8 +339,11 @@ func (d *DbController) JoinGame(userId, gameId int) error {
 		userId, gameId,
 	)
 	if err != nil {
+		slog.Warn("Error joining game", "error", err, "id", gameId, "userId", userId)
 		return errors.New("join game failed")
 	}
+
+	slog.Info("Joined game", "id", gameId, "userId", userId)
 	return nil
 
 }
@@ -315,8 +357,11 @@ func (d *DbController) SetGameStatus(gameId int, status string) error {
 	)
 
 	if err != nil {
+		slog.Warn("Error setting game status", "error", err, "id", gameId, "status", status)
 		return errors.New("update game status failed")
 	}
+
+	slog.Info("Set game status", "id", gameId, "status", status)
 	return nil
 }
 
@@ -326,9 +371,11 @@ func (d *DbController) DeleteGame(gameId int) error {
 	)
 
 	if err != nil {
+		slog.Warn("Error deleting game", "error", err, "id", gameId)
 		return errors.New("delete game failed")
 	}
 
+	slog.Info("Deleted game", "id", gameId)
 	return nil
 }
 
@@ -341,7 +388,10 @@ func (d *DbController) RemovePlayer(gameId, userId int) error {
 	)
 
 	if err != nil {
+		slog.Warn("Error removing player", "error", err, "id", gameId, "userId", userId)
 		return errors.New("update game players failed")
 	}
+
+	slog.Info("Removed player", "id", gameId, "userId", userId)
 	return nil
 }
