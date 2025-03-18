@@ -20,22 +20,25 @@
 
     <main>
         <!-- Экран вопросов -->
-        <div class="questions-grid" v-if="!activeQuestion">
-            <div class="theme-card" v-for="(theme, index) in themes" :key="index">
-                <h3>[[ theme.title ]]</h3>
-                <div class="questions-row">
-                    <button
-                            class="question-btn"
+        <div class="questions-table-wrapper" v-if="!activeQuestion">
+            <table class="questions-table">
+                <tbody>
+                <tr v-for="(theme, index) in themes" :key="index">
+                    <td class="theme-title">[[ theme.title ]]</td>
+                    <td
                             v-for="question in theme.questions"
                             :key="question.question_id"
+                            class="question-cell"
                             :class="{ 'used-question': usedQuestions.includes(question.question_id) }"
-                            @click="selectQuestion(question)"
-                            :disabled="usedQuestions.includes(question.question_id)"
+                            @click="!usedQuestions.includes(question.question_id) && selectQuestion(question)"
                     >
-                        [[ question.level ]]
-                    </button>
-                </div>
-            </div>
+                        <div class="question-content">
+                            [[ question.level * 100 ]]
+                        </div>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
         </div>
 
         <!-- Полноэкранный вопрос -->
