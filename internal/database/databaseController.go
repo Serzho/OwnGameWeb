@@ -349,7 +349,7 @@ func (d *DbController) JoinGame(userId, gameId int) error {
 }
 
 func (d *DbController) SetGameStatus(gameId int, status string) error {
-	err := d.pool.QueryRow(
+	_, err := d.pool.Exec(
 		context.Background(),
 		`UPDATE game SET status = $1 
  			WHERE id = $2::int;`,
@@ -394,4 +394,21 @@ func (d *DbController) RemovePlayer(gameId, userId int) error {
 
 	slog.Info("Removed player", "id", gameId, "userId", userId)
 	return nil
+}
+
+func (d *DbController) GetSample(sampleId int) (*models.QuestionSample, error) {
+	var sample models.QuestionSample
+
+	err := pgxscan.Get(context.Background(), d.pool, &sample, `
+        SELECT * FROM "question_sample"
+        WHERE id = $1
+        LIMIT 1;
+    `, sampleId)
+
+	if err != nil {
+		slog.Warn("Error getting sample", "error", err, "id", sampleId)
+		return nil, err
+	}
+
+	return &sample, nil
 }

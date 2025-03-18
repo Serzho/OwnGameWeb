@@ -10,7 +10,9 @@ func RegisterPlayRoutes(r *gin.Engine, h *handlers.PlayHandler, m gin.HandlerFun
 	group.Use(m)
 
 	group.GET("/waitingroom", h.WaitingRoomPage)
+	group.GET("/masterroom", h.MasterRoomPage)
 	group.GET("/gameinfo", h.GameInfo)
+	group.GET("/questions", h.GetQuestions)
 
 	group.POST("/start", h.StartGame)
 	group.POST("/leave", h.LeaveGame)

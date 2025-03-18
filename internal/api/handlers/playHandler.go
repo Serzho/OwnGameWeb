@@ -28,6 +28,37 @@ func (h *PlayHandler) WaitingRoomPage(c *gin.Context) {
 	c.HTML(http.StatusOK, "waitingroom.html", gin.H{})
 }
 
+func (h *PlayHandler) MasterRoomPage(c *gin.Context) {
+	gameId, exists := c.Get("gameId")
+	if !exists {
+		slog.Warn("gameId not found in context")
+		c.Redirect(http.StatusTemporaryRedirect, "/main")
+		return
+	}
+
+	userId, exists := c.Get("userId")
+	if !exists {
+		slog.Warn("userId not found in context")
+		c.Redirect(http.StatusTemporaryRedirect, "/main")
+		return
+	}
+
+	slog.Info("Check is master", "userId", userId, "gameId", gameId)
+	isMaster, err := h.service.CheckIsMaster(userId.(int), gameId.(int))
+
+	if err != nil {
+		slog.Warn("Check is master failed", "err", err, "userId", userId, "gameId", gameId)
+	}
+
+	if !isMaster {
+		slog.Warn("userId is not master", "userId", userId, "gameId", gameId)
+		c.Redirect(http.StatusTemporaryRedirect, "/main")
+		return
+	}
+
+	c.HTML(http.StatusOK, "masterroom.html", gin.H{})
+}
+
 func (h *PlayHandler) GameInfo(c *gin.Context) {
 	gameId, exists := c.Get("gameId")
 	if !exists {
@@ -88,7 +119,7 @@ func (h *PlayHandler) StartGame(c *gin.Context) {
 	}
 
 	slog.Info("Successfully start game", "gameId", gameId.(int), "userId", userId.(int))
-	c.Redirect(http.StatusTemporaryRedirect, "/play/playroom")
+	c.JSON(http.StatusOK, gin.H{})
 }
 
 func (h *PlayHandler) CancelGame(c *gin.Context) {
@@ -202,5 +233,36 @@ func (h *PlayHandler) LeaveGame(c *gin.Context) {
 	slog.Info("Successfully leaving player", "gameId", gameId.(int), "userId", userId.(int))
 	c.JSON(http.StatusOK, gin.H{
 		"code": http.StatusOK,
+	})
+}
+
+func (h *PlayHandler) GetQuestions(c *gin.Context) {
+	userId, exists := c.Get("userId")
+	if !exists {
+		slog.Warn("userId not found in context")
+		c.JSON(http.StatusUnauthorized, gin.H{})
+		return
+	}
+
+	gameId, exists := c.Get("gameId")
+	if !exists {
+		slog.Warn("gameId not found in context")
+		c.JSON(http.StatusBadRequest, gin.H{})
+		return
+	}
+
+	slog.Info("Getting questions", "gameId", gameId.(int), "userId", userId.(int))
+	sampleContent, err := h.service.GetSampleContent(gameId.(int), userId.(int))
+
+	if err != nil {
+		slog.Warn("Error GetSampleContent", "err", err, "gameId", gameId.(int), "userId", userId.(int))
+		c.JSON(http.StatusBadRequest, gin.H{})
+		return
+	}
+
+	slog.Info("Successfully getting questions", "sampleContent", sampleContent, "gameId", gameId.(int), "userId", userId.(int))
+	c.JSON(http.StatusOK, gin.H{
+		"code": http.StatusOK,
+		"data": sampleContent,
 	})
 }

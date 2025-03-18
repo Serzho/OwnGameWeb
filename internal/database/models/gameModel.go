@@ -11,7 +11,7 @@ type Game struct {
 	MasterId   int
 	PlayersIds []int
 	MaxPlayers int
-	Sample     string
+	Sample     int
 }
 
 type PlayerJson struct {

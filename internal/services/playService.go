@@ -119,3 +119,38 @@ func (s *PlayService) GetGameInfo(gameId, userId int) (string, error) {
 	slog.Info("Successfully returning gameinfo", "userId", userId, "result", result)
 	return string(result), nil
 }
+
+func (s *PlayService) CheckIsMaster(userId, gameId int) (bool, error) {
+	slog.Info("Search game", "gameId", gameId)
+	game, err := s.dbController.GetGame(gameId)
+	if err != nil {
+		slog.Warn("Error getting game", "id", gameId, "error", err)
+	}
+
+	return game.MasterId == userId, nil
+}
+
+func (s *PlayService) GetSampleContent(gameId, userId int) (string, error) {
+	slog.Info("Search game", "gameId", gameId, "userId", userId)
+	game, err := s.dbController.GetGame(gameId)
+
+	if err != nil {
+		slog.Warn("Error getting game", "id", gameId, "error", err)
+		return "", errors.New("game not found")
+	}
+
+	if game.MasterId != userId {
+		slog.Warn("MasterId is not match", "game", game, "userId", userId)
+		return "", errors.New("master id not match")
+	}
+
+	slog.Info("Search sample", "game", game)
+	sample, err := s.dbController.GetSample(game.Sample)
+
+	if err != nil {
+		slog.Warn("Error getting sample", "game", game, "error", err)
+		return "", errors.New("sample not found")
+	}
+
+	return sample.Content, nil
+}

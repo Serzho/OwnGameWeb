@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<!--suppress ALL -->
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Игровой раунд | Своя Игра</title>
+    <link rel="stylesheet" href="/static/css/styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/3.5.13/vue.global.min.js"></script>
+    <script src="/static/js/masterroom.js"></script>
+</head>
+<body>
+<div id="app">
+    <header>
+        <div class="logo">[[ roomName ]]</div>
+        <div class="header-right">
+            <div class="players-count">[[ currentPlayers ]]/[[ maxPlayers ]] игроков</div>
+        </div>
+    </header>
+
+    <main>
+        <!-- Экран вопросов -->
+        <div class="questions-grid" v-if="!activeQuestion">
+            <div class="theme-card" v-for="(theme, index) in themes" :key="index">
+                <h3>[[ theme.title ]]</h3>
+                <div class="questions-row">
+                    <button
+                            class="question-btn"
+                            v-for="question in theme.questions"
+                            :key="question.question_id"
+                            :class="{ 'used-question': usedQuestions.includes(question.question_id) }"
+                            @click="selectQuestion(question)"
+                            :disabled="usedQuestions.includes(question.question_id)"
+                    >
+                        [[ question.level ]]
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Полноэкранный вопрос -->
+        <div class="fullscreen-question" v-if="activeQuestion">
+            <div class="question-content">
+                <div v-if="activeQuestion.type === 'аудио'">
+                    <audio controls :src="'/static/media/' + activeQuestion.attachment"></audio>
+                </div>
+                <div v-if="activeQuestion.type === 'фото'">
+                    <img :src="'/static/media/' + activeQuestion.attachment" alt="Вопрос">
+                </div>
+                <h2>[[ activeQuestion.question ]]</h2>
+
+                <button
+                        class="btn register-btn"
+                        @click="startAnswerPhase"
+                        v-if="!answerPhase"
+                >
+                    Озвучить вопрос
+                </button>
+
+                <div class="answer-phase" v-if="answerPhase">
+                    <div class="timer">Осталось: [[ timer ]] сек</div>
+                    <div class="responding-player" v-if="respondingPlayer">
+                        Отвечает: [[ respondingPlayer.name ]]
+                        <div class="answer-buttons" v-if="showAnswerButtons">
+                            <button class="btn login-btn" @click="handleAnswer(true)">Верно</button>
+                            <button class="btn delete-btn" @click="handleAnswer(false)">Не верно</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Панель игроков -->
+        <div class="players-panel">
+            <div class="player-card" v-for="player in players" :key="player.id">
+                <span>[[ player.name ]]</span>
+                <span>[[ player.score ]] очков</span>
+            </div>
+        </div>
+
+        <div v-if="errorMessage" class="error-message">
+            [[ errorMessage ]]
+        </div>
+    </main>
+</div>
+
+</body>
+</html>

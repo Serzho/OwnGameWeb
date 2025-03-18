@@ -108,7 +108,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     });
 
                     if (!response.ok) throw new Error('Ошибка запуска игры');
-                    //window.location.href = `/game/${this.gameId}/play`;
+                    window.location.href = `/play/masterroom`;
                 } catch (error) {
                     this.errorMessage = error.message;
                 } finally {
