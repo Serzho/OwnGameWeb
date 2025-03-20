@@ -3,25 +3,25 @@ package models
 import "time"
 
 type Game struct {
-	Id         int
+	ID         int
 	Title      string
 	Status     string
 	InviteCode string
 	StartTime  time.Time
-	MasterId   int
-	PlayersIds []int
+	MasterID   int
+	PlayersIDs []int
 	MaxPlayers int
 	Sample     int
 }
 
-type PlayerJson struct {
-	Id   int    `json:"id"`
+type PlayerJSON struct {
+	ID   int    `json:"id"`
 	Name string `json:"name"`
 }
 
-type GameInfoJson struct {
+type GameInfoJSON struct {
 	Title      string       `json:"title"`
-	Players    []PlayerJson `json:"players"`
+	Players    []PlayerJSON `json:"players"`
 	MaxPlayers int          `json:"maxPlayers"`
 	IsHost     bool         `json:"isHost"`
 	InviteCode string       `json:"inviteCode"`

@@ -1,145 +1,143 @@
 package services
 
 import (
+	"fmt"
+	"log/slog"
+	"mime/multipart"
+
 	"OwnGameWeb/config"
 	"OwnGameWeb/internal/api/utils"
 	"OwnGameWeb/internal/database"
 	"OwnGameWeb/internal/database/models"
-	"errors"
-	"fmt"
-	"log/slog"
-	"mime/multipart"
 )
 
 type ManageService struct {
-	dbController *database.DbController
+	dbController *database.DBController
 	Cfg          *config.Config
 }
 
-func NewManageService(c *database.DbController, cfg *config.Config) *ManageService {
+func NewManageService(c *database.DBController, cfg *config.Config) *ManageService {
 	return &ManageService{dbController: c, Cfg: cfg}
 }
 
-func (s *ManageService) JoinGame(code string, userId int) (int, error) {
-	slog.Info("Search game by code", "code", code, "userId", userId)
+func (s *ManageService) JoinGame(code string, userID int) (int, error) {
+	slog.Info("Search game by code", "code", code, "userID", userID)
 	game, err := s.dbController.GetGameByInviteCode(code)
 	if err != nil {
-		slog.Warn("Can't find game by code", "code", code, "userId", userId, "err", err)
-		return 0, errors.New("cannot find game")
+		slog.Warn("Can't find game by code", "code", code, "userID", userID, "err", err)
+		return 0, ErrFindGame
 	}
 
-	slog.Info("Join game by code", "code", code, "userId", userId)
-	err = s.dbController.JoinGame(userId, game.Id)
-
+	slog.Info("Join game by code", "code", code, "userID", userID)
+	err = s.dbController.JoinGame(userID, game.ID)
 	if err != nil {
-		slog.Warn("Can't join game", "code", code, "userId", userId, "err", err)
-		return 0, errors.New("failed to join game")
+		slog.Warn("Can't join game", "code", code, "userID", userID, "err", err)
+		return 0, ErrJoinGame
 	}
 
-	slog.Info("Successfully join game", "code", code, "userId", userId, "game", game)
-	return game.Id, nil
+	slog.Info("Successfully join game", "code", code, "userID", userID, "game", game)
+	return game.ID, nil
 }
 
-func (s *ManageService) CreateGame(userId int, packId int, title string, maxPlayers int) (int, error) {
-	slog.Info("Search current game by master id", "userId", userId)
-	_, err := s.dbController.GetCurrentGameByMasterId(userId)
+func (s *ManageService) CreateGame(userID int, packID int, title string, maxPlayers int) (int, error) {
+	slog.Info("Search current game by master id", "userID", userID)
+	_, err := s.dbController.GetCurrentGameByMasterID(userID)
 	if err == nil {
-		slog.Warn("Player already in game", "userId", userId)
-		return 0, errors.New("player already playing")
+		slog.Warn("Player already in game", "userID", userID)
+		return 0, ErrPlayerAlreadyInGame
 	}
 
-	slog.Info("Get pack by packId", "packId", packId)
-	pack, err := s.dbController.GetPack(packId)
-
+	slog.Info("Get pack by packID", "packID", packID)
+	pack, err := s.dbController.GetPack(packID)
 	if err != nil {
-		slog.Warn("Can't find pack by id", "packId", packId, "err", err)
-		return 0, errors.New("pack not found")
+		slog.Warn("Can't find pack by id", "packID", packID, "err", err)
+		return 0, ErrGetPack
 	}
 
-	slog.Info("Generating sample", "pack", pack, "userId", userId)
+	slog.Info("Generating sample", "pack", pack, "userID", userID)
 	sample, err := utils.GenerateSample(pack, s.Cfg)
 	if err != nil {
-		slog.Warn("Can't generate sample", "pack", pack, "userId", userId, "err", err)
-		return 0, errors.New("generate sample failed")
+		slog.Warn("Can't generate sample", "pack", pack, "userID", userID, "err", err)
+		return 0, ErrGenerateSample
 	}
 
-	slog.Info("Adding sample to database", "userId", userId, "sample", sample)
-	sampleId, err := s.dbController.AddSample(sample)
+	slog.Info("Adding sample to database", "userID", userID, "sample", sample)
+	sampleID, err := s.dbController.AddSample(sample)
 	if err != nil {
-		slog.Warn("Can't add sample to database", "userId", userId, "sample", sample, "err", err)
-		return 0, errors.New("add sample failed")
+		slog.Warn("Can't add sample to database", "userID", userID, "sample", sample, "err", err)
+		return 0, ErrAddSample
 	}
 
-	slog.Info("GetInvites", "userId", userId)
+	slog.Info("GetInvites", "userID", userID)
 	invitesList, err := s.dbController.GetInvites()
 	if err != nil {
-		slog.Warn("Can't get invites", "userId", userId, "err", err)
-		return 0, errors.New("get invites failed")
+		slog.Warn("Can't get invites", "userID", userID, "err", err)
+		return 0, ErrGenerateInvite
 	}
 
-	slog.Info("Generating invite code", "inviteList", invitesList, "userId", userId)
+	slog.Info("Generating invite code", "inviteList", invitesList, "userID", userID)
 	inviteCode, err := utils.GenerateInviteCode(invitesList)
 	if err != nil {
-		slog.Warn("Can't generate invite code", "userId", userId, "err", err)
-		return 0, errors.New("generate invite code failed")
+		slog.Warn("Can't generate invite code", "userID", userID, "err", err)
+		return 0, ErrGenerateInvite
 	}
 
-	slog.Info("Adding game to database", "userId", userId, "title", title, "maxPlayers", maxPlayers, "sample", sample, "inviteCode", inviteCode)
-	gameId, err := s.dbController.AddGame(title, inviteCode, userId, maxPlayers, sampleId)
+	slog.Info("Adding game to database", "userID", userID, "title", title, "maxPlayers", maxPlayers,
+		"sample", sample, "inviteCode", inviteCode)
 
+	gameID, err := s.dbController.AddGame(title, inviteCode, userID, maxPlayers, sampleID)
 	if err != nil {
-		slog.Warn("Can't add game to database", "userId", userId, "err", err)
-		return 0, err
+		slog.Warn("Can't add game to database", "userID", userID, "err", err)
+		return 0, ErrAddGame
 	}
 
-	slog.Info("Successfully created game", "userId", userId, "gameId", gameId)
-	return gameId, nil
-
+	slog.Info("Successfully created game", "userID", userID, "gameID", gameID)
+	return gameID, nil
 }
 
-func (s *ManageService) AddPack(userId int, file multipart.File, header *multipart.FileHeader) error {
-	slog.Info("Saving pack file", "userId", userId, "header", header)
+func (s *ManageService) AddPack(userID int, file multipart.File, header *multipart.FileHeader) error {
+	slog.Info("Saving pack file", "userID", userID, "header", header)
 	filename, err := utils.SavePackGame(s.Cfg, file, header)
 	if err != nil {
-		slog.Warn("Can't save pack file", "userId", userId, "err", err)
-		return errors.New("file save failed")
+		slog.Warn("Can't save pack file", "userID", userID, "err", err)
+		return ErrFileSave
 	}
 
-	slog.Info("Adding pack to database", "userId", userId, "file", filename)
-	err = s.dbController.AddPack(userId, filename)
+	slog.Info("Adding pack to database", "userID", userID, "file", filename)
+	err = s.dbController.AddPack(userID, filename)
 	if err != nil {
-		slog.Warn("Error adding pack to database", "userId", userId, "err", err)
-		return errors.New("database add pack failed")
+		slog.Warn("Error adding pack to database", "userID", userID, "err", err)
+		return ErrAddPack
 	}
 
-	slog.Info("Successfully added pack to database", "userId", userId, "file", filename)
+	slog.Info("Successfully added pack to database", "userID", userID, "file", filename)
 	return nil
 }
 
-func (s *ManageService) GetAllPacks(userId int) (*[]models.QuestionPackJson, error) {
-	slog.Info("Get all packs", "userId", userId)
-	userPacks, err := s.dbController.GetUserPacks(userId)
+func (s *ManageService) GetAllPacks(userID int) (*[]models.QuestionPackJSON, error) {
+	slog.Info("Get all packs", "userID", userID)
+	userPacks, err := s.dbController.GetUserPacks(userID)
 	if err != nil {
-		slog.Warn("Can't get all packs", "userId", userId, "err", err)
-		return nil, errors.New("get user packs failed")
+		slog.Warn("Can't get all packs", "userID", userID, "err", err)
+		return nil, ErrGetPack
 	}
 
-	jsonPacks := make([]models.QuestionPackJson, 0, 5)
+	jsonPacks := make([]models.QuestionPackJSON, 0, 5)
 
 	for _, val := range *userPacks {
-		jsonPacks = append(jsonPacks, models.QuestionPackJson{Id: val.Id, Title: val.Title, IsOwner: userId == val.Owner})
+		jsonPacks = append(jsonPacks, models.QuestionPackJSON{ID: val.ID, Title: val.Title, IsOwner: userID == val.Owner})
 	}
 
-	slog.Info("Successfully get all packs", "userId", userId, "jsonPacks", jsonPacks)
+	slog.Info("Successfully get all packs", "userID", userID, "jsonPacks", jsonPacks)
 	return &jsonPacks, nil
 }
 
-func (s *ManageService) GetPackFile(packId int) (string, error) {
-	slog.Info("Get pack file", "packId", packId)
-	pack, err := s.dbController.GetPack(packId)
+func (s *ManageService) GetPackFile(packID int) (string, error) {
+	slog.Info("Get pack file", "packID", packID)
+	pack, err := s.dbController.GetPack(packID)
 	if err != nil {
-		slog.Warn("Can't find pack by id", "packId", packId, "err", err)
-		return "", errors.New("get pack from database failed")
+		slog.Warn("Can't find pack by id", "packID", packID, "err", err)
+		return "", ErrGetPack
 	}
 
 	filename := fmt.Sprintf("%s%s", s.Cfg.Global.CsvPath, pack.Filename)
@@ -148,31 +146,31 @@ func (s *ManageService) GetPackFile(packId int) (string, error) {
 	return filename, nil
 }
 
-func (s *ManageService) DeletePack(userId int, packId int) error {
-	slog.Info("Get pack", "userId", userId, "packId", packId)
-	pack, err := s.dbController.GetPack(packId)
+func (s *ManageService) DeletePack(userID int, packID int) error {
+	slog.Info("Get pack", "userID", userID, "packID", packID)
+	pack, err := s.dbController.GetPack(packID)
 	if err != nil {
-		slog.Warn("Can't find pack by id", "packId", packId, "err", err)
-		return errors.New("get pack from database failed")
+		slog.Warn("Can't find pack by id", "packID", packID, "err", err)
+		return ErrGetPack
 	}
 
-	if pack.Owner != userId {
-		slog.Warn("userId is not owner of pack", "userId", userId, "pack", pack)
-		return errors.New("you are not the owner of this pack")
+	if pack.Owner != userID {
+		slog.Warn("userID is not owner of pack", "userID", userID, "pack", pack)
+		return ErrNotOwner
 	}
 
-	slog.Info("Deleting pack", "userId", userId, "packId", packId)
-	err = s.dbController.DeletePack(packId)
+	slog.Info("Deleting pack", "userID", userID, "packID", packID)
+	err = s.dbController.DeletePack(packID)
 	if err != nil {
-		slog.Warn("Can't delete pack", "userId", userId, "packId", packId, "err", err)
-		return errors.New("database delete failed")
+		slog.Warn("Can't delete pack", "userID", userID, "packID", packID, "err", err)
+		return ErrDeletePack
 	}
 
 	slog.Info("Deleting pack file", "pack", pack)
 	err = utils.DeletePackGame(pack.Filename, s.Cfg)
 	if err != nil {
-		slog.Warn("Can't delete pack file", "packId", pack.Id, "err", err)
-		return err
+		slog.Warn("Can't delete pack file", "packID", pack.ID, "err", err)
+		return ErrDeletePackFile
 	}
 
 	return nil

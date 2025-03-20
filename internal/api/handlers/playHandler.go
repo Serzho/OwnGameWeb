@@ -1,16 +1,32 @@
 package handlers
 
 import (
-	"OwnGameWeb/internal/api/utils"
-	"OwnGameWeb/internal/services"
 	"fmt"
-	"github.com/gin-gonic/gin"
 	"log/slog"
 	"net/http"
+
+	"OwnGameWeb/internal/api/utils"
+	"OwnGameWeb/internal/services"
+
+	"github.com/gin-gonic/gin"
 )
 
 type PlayHandler struct {
 	service *services.PlayService
+}
+
+func getIntFromContext(c *gin.Context, key string) (int, error) {
+	value, exists := c.Get(key)
+	if !exists {
+		return -1, ErrNotFoundInContext
+	}
+
+	intValue, ok := value.(int)
+	if !ok {
+		return -1, ErrIncorrectType
+	}
+
+	return intValue, nil
 }
 
 func NewPlayHandler(s *services.PlayService) *PlayHandler {
@@ -22,6 +38,7 @@ func (h *PlayHandler) WaitingRoomPage(c *gin.Context) {
 	if !exists {
 		slog.Warn("gameId not found in context")
 		c.Redirect(http.StatusTemporaryRedirect, "/main")
+
 		return
 	}
 
@@ -29,30 +46,33 @@ func (h *PlayHandler) WaitingRoomPage(c *gin.Context) {
 }
 
 func (h *PlayHandler) MasterRoomPage(c *gin.Context) {
-	gameId, exists := c.Get("gameId")
-	if !exists {
-		slog.Warn("gameId not found in context")
-		c.Redirect(http.StatusTemporaryRedirect, "/main")
-		return
-	}
-
-	userId, exists := c.Get("userId")
-	if !exists {
-		slog.Warn("userId not found in context")
-		c.Redirect(http.StatusTemporaryRedirect, "/main")
-		return
-	}
-
-	slog.Info("Check is master", "userId", userId, "gameId", gameId)
-	isMaster, err := h.service.CheckIsMaster(userId.(int), gameId.(int))
-
+	userID, err := getIntFromContext(c, "userID")
 	if err != nil {
-		slog.Warn("Check is master failed", "err", err, "userId", userId, "gameId", gameId)
+		slog.Warn("Error get userID", "err", err)
+		c.JSON(http.StatusBadRequest, gin.H{})
+
+		return
+	}
+
+	gameID, err := getIntFromContext(c, "gameID")
+	if err != nil {
+		slog.Warn("Error get gameID", "err", err)
+		c.JSON(http.StatusBadRequest, gin.H{})
+
+		return
+	}
+
+	slog.Info("Check is master", "userID", userID, "gameID", gameID)
+
+	isMaster, err := h.service.CheckIsMaster(userID, gameID)
+	if err != nil {
+		slog.Warn("Check is master failed", "err", err, "userID", userID, "gameID", gameID)
 	}
 
 	if !isMaster {
-		slog.Warn("userId is not master", "userId", userId, "gameId", gameId)
+		slog.Warn("userID is not master", "userID", userID, "gameID", gameID)
 		c.Redirect(http.StatusTemporaryRedirect, "/main")
+
 		return
 	}
 
@@ -60,28 +80,32 @@ func (h *PlayHandler) MasterRoomPage(c *gin.Context) {
 }
 
 func (h *PlayHandler) GameInfo(c *gin.Context) {
-	gameId, exists := c.Get("gameId")
-	if !exists {
-		slog.Warn("gameId not found in context")
-		c.Redirect(http.StatusTemporaryRedirect, "/main")
+	userID, err := getIntFromContext(c, "userID")
+	if err != nil {
+		slog.Warn("Error get userID", "err", err)
+		c.JSON(http.StatusBadRequest, gin.H{})
+
 		return
 	}
 
-	userId, exists := c.Get("userId")
-	if !exists {
-		slog.Warn("userId not found in context")
-		c.Redirect(http.StatusTemporaryRedirect, "/auth/signin")
+	gameID, err := getIntFromContext(c, "gameID")
+	if err != nil {
+		slog.Warn("Error get gameID", "err", err)
+		c.JSON(http.StatusBadRequest, gin.H{})
+
 		return
 	}
 
-	slog.Info("GetGameInfo", "gameId", gameId.(int), "userId", userId.(int))
-	gameInfo, err := h.service.GetGameInfo(gameId.(int), userId.(int))
+	slog.Info("GetGameInfo", "gameID", gameID, "userID", userID)
+
+	gameInfo, err := h.service.GetGameInfo(gameID, userID)
 	if err != nil {
 		slog.Warn("Error GetGameInfo", "err", err)
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    http.StatusBadRequest,
 			"message": "cannot get game info",
 		})
+
 		return
 	}
 
@@ -93,75 +117,84 @@ func (h *PlayHandler) GameInfo(c *gin.Context) {
 }
 
 func (h *PlayHandler) StartGame(c *gin.Context) {
-	gameId, exists := c.Get("gameId")
-	if !exists {
-		slog.Warn("gameId not found in context")
-		c.Redirect(http.StatusTemporaryRedirect, "/main")
+	userID, err := getIntFromContext(c, "userID")
+	if err != nil {
+		slog.Warn("Error get userID", "err", err)
+		c.JSON(http.StatusBadRequest, gin.H{})
+
 		return
 	}
 
-	userId, exists := c.Get("userId")
-	if !exists {
-		slog.Warn("userId not found in context")
-		c.Redirect(http.StatusTemporaryRedirect, "/auth/signin")
+	gameID, err := getIntFromContext(c, "gameID")
+	if err != nil {
+		slog.Warn("Error get gameID", "err", err)
+		c.JSON(http.StatusBadRequest, gin.H{})
+
 		return
 	}
 
-	slog.Info("StartGame", "gameId", gameId.(int), "userId", userId.(int))
-	err := h.service.StartGame(userId.(int), gameId.(int))
+	slog.Info("StartGame", "gameID", gameID, "userID", userID)
+
+	err = h.service.StartGame(userID, gameID)
 	if err != nil {
 		slog.Warn("Error StartGame", "err", err)
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    http.StatusBadRequest,
 			"message": "cannot start game",
 		})
+
 		return
 	}
 
-	slog.Info("Successfully start game", "gameId", gameId.(int), "userId", userId.(int))
+	slog.Info("Successfully start game", "gameID", gameID, "userID", userID)
 	c.JSON(http.StatusOK, gin.H{})
 }
 
 func (h *PlayHandler) CancelGame(c *gin.Context) {
-	gameId, exists := c.Get("gameId")
-	if !exists {
-		slog.Warn("gameId not found in context")
-		c.Redirect(http.StatusTemporaryRedirect, "/main")
-		return
-	}
-
-	userId, exists := c.Get("userId")
-	if !exists {
-		slog.Warn("userId not found in context")
-		c.Redirect(http.StatusTemporaryRedirect, "/auth/signin")
-		return
-	}
-
-	slog.Info("CancelGame", "gameId", gameId.(int), "userId", userId.(int))
-	err := h.service.CancelGame(userId.(int), gameId.(int))
+	userID, err := getIntFromContext(c, "userID")
 	if err != nil {
-		slog.Warn("Error CancelGame", "err", err, "gameId", gameId.(int), "userId", userId.(int))
+		slog.Warn("Error get userID", "err", err)
+		c.JSON(http.StatusBadRequest, gin.H{})
+
+		return
+	}
+
+	gameID, err := getIntFromContext(c, "gameID")
+	if err != nil {
+		slog.Warn("Error get gameID", "err", err)
+		c.JSON(http.StatusBadRequest, gin.H{})
+
+		return
+	}
+
+	slog.Info("CancelGame", "gameID", gameID, "userID", userID)
+
+	err = h.service.CancelGame(userID, gameID)
+	if err != nil {
+		slog.Warn("Error CancelGame", "err", err, "gameID", gameID, "userID", userID)
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    http.StatusBadRequest,
 			"message": "cannot cancel game",
 		})
 	}
 
-	slog.Info("Successfully cancel game", "gameId", gameId.(int), "userId", userId.(int))
+	slog.Info("Successfully cancel game", "gameID", gameID, "userID", userID)
 	c.Redirect(http.StatusTemporaryRedirect, "/main")
 }
 
 func (h *PlayHandler) RemovePlayer(c *gin.Context) {
-	jsonMap, err := utils.ParseJsonRequest(c)
+	jsonMap, err := utils.ParseJSONRequest(c)
 	if err != nil {
-		slog.Warn("Error ParseJsonRequest", "err", err)
+		slog.Warn("Error ParseJSONRequest", "err", err)
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"code":    http.StatusUnauthorized,
 			"message": fmt.Sprintf("%v", err),
 		})
+
 		return
 	}
-	playerId, exists := jsonMap["playerId"].(float64)
+
+	playerID, exists := jsonMap["playerID"].(float64)
 	if !exists {
 		slog.Warn("PlayerId not found in context")
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -169,98 +202,109 @@ func (h *PlayHandler) RemovePlayer(c *gin.Context) {
 			"message": "player id not found",
 		})
 	}
-	userId, exists := c.Get("userId")
-	if !exists {
-		slog.Warn("userId not found in context")
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"code":    http.StatusUnauthorized,
-			"message": "cannot remove player",
-		})
-	}
 
-	gameId, exists := c.Get("gameId")
-	if !exists {
-		slog.Warn("gameId not found in context")
-		c.Redirect(http.StatusTemporaryRedirect, "/main")
+	userID, err := getIntFromContext(c, "userID")
+	if err != nil {
+		slog.Warn("Error get userID", "err", err)
+		c.JSON(http.StatusBadRequest, gin.H{})
+
 		return
 	}
 
-	slog.Info("RemovePlayer", "gameId", gameId.(int), "userId", userId.(int), "playerId", int(playerId))
-	err = h.service.RemovePlayer(gameId.(int), userId.(int), int(playerId))
+	gameID, err := getIntFromContext(c, "gameID")
+	if err != nil {
+		slog.Warn("Error get gameID", "err", err)
+		c.JSON(http.StatusBadRequest, gin.H{})
+
+		return
+	}
+
+	slog.Info("RemovePlayer", "gameID", gameID, "userID", userID, "playerID", int(playerID))
+
+	err = h.service.RemovePlayer(gameID, userID, int(playerID))
 	if err != nil {
 		slog.Warn("Error RemovePlayer", "err", err)
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    http.StatusBadRequest,
 			"message": "cannot remove player",
 		})
+
 		return
 	}
 
-	slog.Info("Successfully remove player", "gameId", gameId.(int), "userId", userId.(int), "playerId", int(playerId))
+	slog.Info("Successfully remove player", "gameID", gameID, "userID", userID, "playerID", int(playerID))
 	c.JSON(http.StatusOK, gin.H{
 		"code": http.StatusOK,
 	})
 }
 
 func (h *PlayHandler) LeaveGame(c *gin.Context) {
-	userId, exists := c.Get("userId")
-	if !exists {
-		slog.Warn("userId not found in context")
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"code":    http.StatusUnauthorized,
-			"message": "cannot remove player",
-		})
-	}
+	userID, err := getIntFromContext(c, "userID")
+	if err != nil {
+		slog.Warn("Error get userID", "err", err)
+		c.JSON(http.StatusBadRequest, gin.H{})
 
-	gameId, exists := c.Get("gameId")
-	if !exists {
-		slog.Warn("gameId not found in context")
-		c.Redirect(http.StatusTemporaryRedirect, "/main")
 		return
 	}
 
-	slog.Info("RemovePlayer", "gameId", gameId.(int), "userId", userId.(int))
-	err := h.service.RemovePlayer(gameId.(int), userId.(int), userId.(int))
+	gameID, err := getIntFromContext(c, "gameID")
+	if err != nil {
+		slog.Warn("Error get gameID", "err", err)
+		c.JSON(http.StatusBadRequest, gin.H{})
+
+		return
+	}
+
+	slog.Info("RemovePlayer", "gameID", gameID, "userID", userID)
+
+	err = h.service.RemovePlayer(gameID, userID, userID)
 	if err != nil {
 		slog.Warn("Error RemovePlayer", "err", err)
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    http.StatusBadRequest,
 			"message": "cannot remove player",
 		})
+
 		return
 	}
 
-	slog.Info("Successfully leaving player", "gameId", gameId.(int), "userId", userId.(int))
+	slog.Info("Successfully leaving player", "gameID", gameID, "userID", userID)
 	c.JSON(http.StatusOK, gin.H{
 		"code": http.StatusOK,
 	})
 }
 
 func (h *PlayHandler) GetQuestions(c *gin.Context) {
-	userId, exists := c.Get("userId")
-	if !exists {
-		slog.Warn("userId not found in context")
-		c.JSON(http.StatusUnauthorized, gin.H{})
-		return
-	}
-
-	gameId, exists := c.Get("gameId")
-	if !exists {
-		slog.Warn("gameId not found in context")
-		c.JSON(http.StatusBadRequest, gin.H{})
-		return
-	}
-
-	slog.Info("Getting questions", "gameId", gameId.(int), "userId", userId.(int))
-	sampleContent, err := h.service.GetSampleContent(gameId.(int), userId.(int))
-
+	userID, err := getIntFromContext(c, "userID")
 	if err != nil {
-		slog.Warn("Error GetSampleContent", "err", err, "gameId", gameId.(int), "userId", userId.(int))
+		slog.Warn("Error get userID", "err", err)
 		c.JSON(http.StatusBadRequest, gin.H{})
+
 		return
 	}
 
-	slog.Info("Successfully getting questions", "sampleContent", sampleContent, "gameId", gameId.(int), "userId", userId.(int))
+	gameID, err := getIntFromContext(c, "gameID")
+	if err != nil {
+		slog.Warn("Error get gameID", "err", err)
+		c.JSON(http.StatusBadRequest, gin.H{})
+
+		return
+	}
+
+	slog.Info("Getting questions", "gameID", gameID, "userID", userID)
+
+	sampleContent, err := h.service.GetSampleContent(gameID, userID)
+	if err != nil {
+		slog.Warn("Error GetSampleContent", "err", err, "gameID", gameID, "userID", userID)
+		c.JSON(http.StatusBadRequest, gin.H{})
+
+		return
+	}
+
+	slog.Info("Successfully getting questions", "sampleContent", sampleContent,
+		"gameID", gameID, "userID", userID,
+	)
+
 	c.JSON(http.StatusOK, gin.H{
 		"code": http.StatusOK,
 		"data": sampleContent,

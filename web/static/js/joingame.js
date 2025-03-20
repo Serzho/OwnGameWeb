@@ -48,7 +48,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     this.successMessage = 'Успешное подключение! Перенаправление...';
                     setTimeout(() => {
-                        window.location.href = '/play/waitingroom';
+                        window.location.href = '/play/playerroom';
                     }, 2000);
                 } catch (error) {
                     this.errorMessage = error.message;

@@ -1,13 +1,13 @@
 package models
 
 type QuestionSample struct {
-	Id      int
+	ID      int
 	Pack    int
 	Content string
 }
 
-type QuestionJson struct {
-	QuestionId int    `json:"question_id"`
+type QuestionJSON struct {
+	QuestionID int    `json:"questionid"`
 	Level      int    `json:"level"`
 	Type       string `json:"type"`
 	Attachment string `json:"attachment"`
@@ -15,13 +15,13 @@ type QuestionJson struct {
 	Answer     string `json:"answer"`
 }
 
-type ThemeJson struct {
+type ThemeJSON struct {
 	Title     string         `json:"title"`
-	Questions []QuestionJson `json:"questions"`
+	Questions []QuestionJSON `json:"questions"`
 }
 
-type QuestionSampleJson struct {
-	FirstRound  []*ThemeJson `json:"first_round"`
-	SecondRound []*ThemeJson `json:"second_round"`
-	FinalRound  *ThemeJson   `json:"final_round"`
+type QuestionSampleJSON struct {
+	FirstRound  []*ThemeJSON `json:"firstround"`
+	SecondRound []*ThemeJSON `json:"secondround"`
+	FinalRound  *ThemeJSON   `json:"finalround"`
 }

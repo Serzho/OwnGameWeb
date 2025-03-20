@@ -2,22 +2,22 @@ package utils
 
 import (
 	"encoding/json"
-	"github.com/gin-gonic/gin"
 	"io"
+
+	"github.com/gin-gonic/gin"
 )
 
-func ParseJsonRequest(c *gin.Context) (map[string]interface{}, error) {
+func ParseJSONRequest(c *gin.Context) (map[string]interface{}, error) {
 	jsonMap := make(map[string]interface{})
 
 	bodyAsByteArray, err := io.ReadAll(c.Request.Body)
 	if err != nil {
-		return nil, err
+		return nil, ErrReadingRequestBody
 	}
 
 	err = json.Unmarshal(bodyAsByteArray, &jsonMap)
-
 	if err != nil {
-		return nil, err
+		return nil, ErrUnmarshalJSON
 	}
 
 	return jsonMap, nil

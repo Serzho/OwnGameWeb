@@ -2,6 +2,7 @@ package routes
 
 import (
 	"OwnGameWeb/internal/api/handlers"
+
 	"github.com/gin-gonic/gin"
 )
 

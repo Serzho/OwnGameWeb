@@ -3,19 +3,19 @@ package utils
 import (
 	"crypto/sha256"
 	"encoding/hex"
-	"errors"
 	"fmt"
 	"math/rand/v2"
 	"os"
 	"time"
 )
 
-func SelectRandomValues(in []int, count int) ([]int, error) {
-	if len(in) < count {
-		return nil, errors.New("not enough values")
+func SelectRandomValues(input []int, count int) ([]int, error) {
+	if len(input) < count {
+		return nil, ErrNotEnoughValuesToSelect
 	}
-	slice := make([]int, len(in))
-	copy(slice, in)
+
+	slice := make([]int, len(input))
+	copy(slice, input)
 
 	for i := range slice {
 		j := rand.IntN(i + 1)
@@ -37,7 +37,8 @@ func GeneratePackFilename() (string, error) {
 			return filename, nil
 		}
 	}
-	return "", errors.New("cannot generate correct filename")
+
+	return "", ErrFilenameGeneration
 }
 
 func GenerateInviteCode(codesList []string) (string, error) {
@@ -45,8 +46,10 @@ func GenerateInviteCode(codesList []string) (string, error) {
 	for _, code := range codesList {
 		codesMap[code] = true
 	}
+
 	letterBytes := "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 	code := make([]byte, 6)
+
 	for range 10000 {
 		for i := range code {
 			code[i] = letterBytes[rand.IntN(len(letterBytes))]
@@ -56,8 +59,9 @@ func GenerateInviteCode(codesList []string) (string, error) {
 		if exists {
 			continue
 		}
+
 		return string(code), nil
 	}
 
-	return "", errors.New("cannot generate invite code")
+	return "", ErrGenerateInviteCode
 }

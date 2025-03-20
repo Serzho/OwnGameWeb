@@ -596,3 +596,42 @@ button:disabled:hover {
     color: #e53e3e;
     opacity: 0.7;
 }
+
+
+
+/* Player Room Specific */
+.answer-btn-wrapper {
+    text-align: center;
+    margin: 2rem 0;
+}
+
+.answer-btn {
+    background: #48bb78;
+    font-size: 1.2rem;
+    padding: 1rem 3rem;
+    position: relative;
+}
+
+.answer-timer {
+    font-size: 1.4rem;
+    color: #2c5282;
+    margin-top: 1rem;
+    font-weight: bold;
+}
+
+.answer-btn:disabled {
+    background: #a0aec0;
+    cursor: not-allowed;
+}
+
+.shake {
+    animation: shake 0.5s;
+}
+
+@keyframes shake {
+    0% { transform: translateX(0); }
+    25% { transform: translateX(-10px); }
+    50% { transform: translateX(10px); }
+    75% { transform: translateX(-5px); }
+    100% { transform: translateX(0); }
+}

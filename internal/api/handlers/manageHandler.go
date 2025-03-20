@@ -1,14 +1,16 @@
 package handlers
 
 import (
-	"OwnGameWeb/internal/api/utils"
-	"OwnGameWeb/internal/services"
 	"fmt"
-	"github.com/gin-gonic/gin"
 	"log/slog"
 	"net/http"
 	"os"
 	"strconv"
+
+	"OwnGameWeb/internal/api/utils"
+	"OwnGameWeb/internal/services"
+
+	"github.com/gin-gonic/gin"
 )
 
 type ManageHandler struct {
@@ -17,6 +19,20 @@ type ManageHandler struct {
 
 func NewManageHandler(s *services.ManageService) *ManageHandler {
 	return &ManageHandler{service: s}
+}
+
+func getIntFromJSON(jsonMap map[string]interface{}, key string) (int, error) {
+	value, exists := jsonMap[key]
+	if !exists {
+		return -1, ErrKeyNotFoundInJSON
+	}
+
+	floatValue, ok := value.(float64)
+	if !ok {
+		return -1, ErrIncorrectType
+	}
+
+	return int(floatValue), nil
 }
 
 func (h *ManageHandler) CreateGamePage(c *gin.Context) {
@@ -40,51 +56,60 @@ func (h *ManageHandler) ProfilePage(c *gin.Context) {
 }
 
 func (h *ManageHandler) JoinGame(c *gin.Context) {
-	jsonMap, err := utils.ParseJsonRequest(c)
+	jsonMap, err := utils.ParseJSONRequest(c)
 	if err != nil {
 		slog.Warn("Error parsing json request", "error", err)
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    http.StatusBadRequest,
 			"message": fmt.Sprintf("%v", err),
 		})
+
 		return
 	}
 
-	userId, exists := c.Get("userId")
+	userID, err := getIntFromContext(c, "userID")
+	if err != nil {
+		slog.Warn("Error get userID", "err", err)
+		c.JSON(http.StatusBadRequest, gin.H{})
 
-	if !exists {
-		slog.Warn("UserId not found in context")
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code":    http.StatusBadRequest,
-			"message": "user id not found",
-		})
+		return
 	}
 
-	code := jsonMap["code"].(string)
+	code, ok := jsonMap["code"].(string)
+	if !ok {
+		slog.Warn("Error get code", "err", err, "map", jsonMap)
+		c.JSON(http.StatusBadRequest, gin.H{})
 
-	slog.Info("JoinGame", "code", code, "userId", userId)
-	gameId, err := h.service.JoinGame(code, userId.(int))
+		return
+	}
 
+	slog.Info("JoinGame", "code", code, "userID", userID)
+
+	gameID, err := h.service.JoinGame(code, userID)
 	if err != nil {
-		slog.Warn("Error joining game", "code", code, "userId", userId, "error", err)
+		slog.Warn("Error joining game", "code", code, "userID", userID, "error", err)
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    http.StatusBadRequest,
 			"message": fmt.Sprintf("%v", err),
 		})
+
 		return
 	}
 
-	slog.Info("JwtCreate", "userId", userId.(int), "gameId", gameId)
-	token, err := utils.JwtCreate(userId.(int), gameId, h.service.Cfg.Global.SecretPhrase)
+	slog.Info("JwtCreate", "userID", userID, "gameID", gameID)
+
+	token, err := utils.JwtCreate(userID, gameID, h.service.Cfg.Global.SecretPhrase)
 	if err != nil {
-		slog.Warn("Error creating token", "userId", userId, "error", err)
+		slog.Warn("Error creating token", "userID", userID, "error", err)
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"code":    http.StatusUnauthorized,
 			"message": fmt.Sprintf("%v", err),
 		})
+
 		return
 	}
-	slog.Info("Success create token", "userId", userId.(int), "gameId", gameId)
+
+	slog.Info("Success create token", "userID", userID, "gameID", gameID)
 
 	c.SetCookie("token", token, 60*60*24, "/", "", false, true)
 	c.JSON(http.StatusOK, gin.H{})
@@ -98,121 +123,152 @@ func (h *ManageHandler) AddPack(c *gin.Context) {
 			"code":    http.StatusBadRequest,
 			"message": "csv file is required",
 		})
+
 		return
 	}
 
-	userId := c.GetInt("userId")
+	userID := c.GetInt("userID")
 
-	slog.Info("AddPack", "userId", userId, "file", file, "header", header)
-	err = h.service.AddPack(userId, file, header)
+	slog.Info("AddPack", "userID", userID, "file", file, "header", header)
 
+	err = h.service.AddPack(userID, file, header)
 	if err != nil {
-		slog.Warn("Error adding pack", "userId", userId, "error", err)
+		slog.Warn("Error adding pack", "userID", userID, "error", err)
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    http.StatusBadRequest,
 			"message": fmt.Sprintf("%v", err),
 		})
+
 		return
 	}
 
-	slog.Info("Success adding pack", "userId", userId)
+	slog.Info("Success adding pack", "userID", userID)
 	c.JSON(http.StatusOK, gin.H{})
 }
 
 func (h *ManageHandler) CreateGame(c *gin.Context) {
-	jsonMap, err := utils.ParseJsonRequest(c)
+	jsonMap, err := utils.ParseJSONRequest(c)
 	if err != nil {
 		slog.Warn("Error parsing json request", "error", err)
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"code":    http.StatusUnauthorized,
 			"message": fmt.Sprintf("%v", err),
 		})
+
 		return
 	}
-	title := jsonMap["title"].(string)
-	maxPlayers := int(jsonMap["maxPlayers"].(float64))
-	packId := int(jsonMap["packId"].(float64))
 
-	userId := c.GetInt("userId")
+	title, ok := jsonMap["title"].(string)
+	if !ok {
+		slog.Warn("Title is not string", "map", jsonMap)
+		c.JSON(http.StatusBadRequest, gin.H{})
 
-	slog.Info("CreateGame", "title", title, "maxPlayers", maxPlayers, "packId", packId, "userId", userId)
-	gameId, err := h.service.CreateGame(userId, packId, title, maxPlayers)
+		return
+	}
 
+	maxPlayers, err := getIntFromJSON(jsonMap, "maxPlayers")
 	if err != nil {
-		slog.Warn("Error creating game", "userId", userId, "error", err)
+		slog.Warn("Error parsing maxPlayers", "error", err, "map", jsonMap)
+		c.JSON(http.StatusBadRequest, gin.H{})
+
+		return
+	}
+
+	packID, err := getIntFromJSON(jsonMap, "packID")
+	if err != nil {
+		slog.Warn("Error parsing packID", "error", err, "map", jsonMap)
+		c.JSON(http.StatusBadRequest, gin.H{})
+
+		return
+	}
+
+	userID := c.GetInt("userID")
+
+	slog.Info("CreateGame", "title", title, "maxPlayers", maxPlayers, "packID", packID, "userID", userID)
+
+	gameID, err := h.service.CreateGame(userID, packID, title, maxPlayers)
+	if err != nil {
+		slog.Warn("Error creating game", "userID", userID, "error", err)
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    http.StatusBadRequest,
 			"message": fmt.Sprintf("%v", err),
 		})
+
 		return
 	}
 
-	slog.Info("JwtCreate", "userId", userId, "gameId", gameId)
-	token, err := utils.JwtCreate(userId, gameId, h.service.Cfg.Global.SecretPhrase)
+	slog.Info("JwtCreate", "userID", userID, "gameID", gameID)
+
+	token, err := utils.JwtCreate(userID, gameID, h.service.Cfg.Global.SecretPhrase)
 	if err != nil {
-		slog.Warn("Error creating token", "userId", userId, "error", err)
+		slog.Warn("Error creating token", "userID", userID, "error", err)
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"code":    http.StatusUnauthorized,
 			"message": fmt.Sprintf("%v", err),
 		})
+
 		return
 	}
 
-	slog.Info("Success create game", "userId", userId, "gameId", gameId)
+	slog.Info("Success create game", "userID", userID, "gameID", gameID)
 	c.SetCookie("token", token, 60*60*24, "/", "", false, true)
 
 	c.JSON(http.StatusOK, gin.H{})
 }
 
 func (h *ManageHandler) GetAllPacks(c *gin.Context) {
-	userId, exists := c.Get("userId")
-	if !exists {
-		slog.Warn("UserId not found in context")
-		c.JSON(http.StatusForbidden, gin.H{
-			"code":    http.StatusForbidden,
-			"message": "user id not found",
-		})
+	userID, err := getIntFromContext(c, "userID")
+	if err != nil {
+		slog.Warn("Error get userID", "err", err)
+		c.JSON(http.StatusBadRequest, gin.H{})
+
 		return
 	}
 
-	slog.Info("GetAllPacks", "userId", userId.(int))
-	packs, err := h.service.GetAllPacks(userId.(int))
+	slog.Info("GetAllPacks", "userID", userID)
+
+	packs, err := h.service.GetAllPacks(userID)
 	if err != nil {
-		slog.Warn("Error getting all packs", "userId", userId.(int), "error", err)
+		slog.Warn("Error getting all packs", "userID", userID, "error", err)
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    http.StatusBadRequest,
 			"message": "can not get all packs",
 		})
+
 		return
 	}
 
-	slog.Info("Success get all packs", "userId", userId.(int))
+	slog.Info("Success get all packs", "userID", userID)
 	c.JSON(http.StatusOK, gin.H{"code": http.StatusOK, "packs": packs})
 }
 
 func (h *ManageHandler) DownloadPack(c *gin.Context) {
-	packId, err := strconv.Atoi(c.Param("id"))
+	packID, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		slog.Warn("Error parsing id", "id", c.Param("id"), "error", err)
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    http.StatusBadRequest,
 			"message": "pack id is invalid",
 		})
+
 		return
 	}
 
-	slog.Info("GetPackFile", "id", packId)
-	filepath, err := h.service.GetPackFile(packId)
+	slog.Info("GetPackFile", "id", packID)
+
+	filepath, err := h.service.GetPackFile(packID)
 	if err != nil {
-		slog.Warn("Error getting pack file", "id", packId, "error", err)
+		slog.Warn("Error getting pack file", "id", packID, "error", err)
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    http.StatusBadRequest,
 			"message": "cannot get pack file",
 		})
+
 		return
 	}
 
 	slog.Info("Reading file", "path", filepath)
+
 	content, err := os.ReadFile(filepath)
 	if err != nil {
 		slog.Warn("Error reading file", "path", filepath, "error", err)
@@ -220,13 +276,15 @@ func (h *ManageHandler) DownloadPack(c *gin.Context) {
 			"code":    http.StatusBadRequest,
 			"message": "cannot read pack file",
 		})
+
 		return
 	}
 
 	slog.Info("Writing file", "path", filepath)
 	c.Header("Content-Disposition", "attachment; filename=pack")
 	c.Header("Content-Type", "application/text/plain")
-	c.Header("Accept-Length", fmt.Sprintf("%d", len(content)))
+	c.Header("Accept-Length", strconv.Itoa(len(content)))
+
 	_, err = c.Writer.Write(content)
 	if err != nil {
 		slog.Warn("Error writing file", "path", filepath, "error", err)
@@ -243,38 +301,37 @@ func (h *ManageHandler) DownloadPack(c *gin.Context) {
 }
 
 func (h *ManageHandler) DeletePack(c *gin.Context) {
-	packId, err := strconv.Atoi(c.Param("id"))
+	packID, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		slog.Warn("Error parsing id", "packId", c.Param("id"), "error", err)
+		slog.Warn("Error parsing id", "packID", c.Param("id"), "error", err)
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    http.StatusBadRequest,
 			"message": "pack id is invalid",
 		})
+
 		return
 	}
 
-	userId, exists := c.Get("userId")
-	if !exists {
-		slog.Warn("UserId not found in context")
-		c.JSON(http.StatusForbidden, gin.H{
-			"code":    http.StatusForbidden,
-			"message": "user id not found",
-		})
-		return
-	}
-
-	slog.Info("DeletePack", "id", packId, "userId", userId.(int))
-	err = h.service.DeletePack(userId.(int), packId)
-
+	userID, err := getIntFromContext(c, "userID")
 	if err != nil {
-		slog.Warn("Error deleting pack", "id", packId, "error", err)
+		slog.Warn("Error get userID", "err", err)
+		c.JSON(http.StatusBadRequest, gin.H{})
+
+		return
+	}
+
+	slog.Info("DeletePack", "id", packID, "userID", userID)
+
+	err = h.service.DeletePack(userID, packID)
+	if err != nil {
+		slog.Warn("Error deleting pack", "id", packID, "error", err)
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    http.StatusBadRequest,
 			"message": "can not delete pack",
 		})
 	}
 
-	slog.Info("Successfully deleted pack", "id", packId)
+	slog.Info("Successfully deleted pack", "id", packID)
 	c.JSON(http.StatusOK, gin.H{
 		"code": http.StatusOK,
 	})

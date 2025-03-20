@@ -1,10 +1,11 @@
 package config
 
 import (
-	"github.com/joho/godotenv"
 	"log/slog"
 	"os"
 	"strconv"
+
+	"github.com/joho/godotenv"
 )
 
 type Config struct {
@@ -24,19 +25,20 @@ type DatabaseConfig struct {
 
 type GlobalConfig struct {
 	SecretPhrase string
-	LoggerLevel  int
+	LoggerLevel  slog.Level
 	CsvPath      string
 }
 
 type ServerConfig struct {
 	Port int
-	Url  string
+	URL  string
 }
 
 func getStringEnv(name string, defaultVal string) string {
 	if value, exists := os.LookupEnv(name); exists {
 		return value
 	}
+
 	slog.Warn("Environment variable is missing", "name", name)
 	return defaultVal
 }
@@ -47,11 +49,34 @@ func getIntEnv(name string, defaultVal int) int {
 		slog.Warn("Environment variable is missing", "name", name)
 		return defaultVal
 	}
+
 	if value, err := strconv.Atoi(valueStr); err == nil {
 		return value
 	}
+
 	slog.Error("Environment variable has incorrect value. Expected type - int\n", "name", name, "value", valueStr)
 	return defaultVal
+}
+
+func getLoggerLevel(name string, defaultVal int) slog.Level {
+	intLevel := getIntEnv(name, defaultVal)
+
+	var level slog.Level
+
+	switch intLevel {
+	case -4:
+		level = slog.LevelDebug
+	case 0:
+		level = slog.LevelInfo
+	case 4:
+		level = slog.LevelWarn
+	case 8:
+		level = slog.LevelError
+	default:
+		level = slog.LevelInfo
+	}
+
+	return level
 }
 
 func Load() *Config {
@@ -60,10 +85,11 @@ func Load() *Config {
 	if err := godotenv.Load(); err != nil {
 		slog.Warn("No .env file found")
 	}
+
 	return &Config{
 		Server: ServerConfig{
 			Port: getIntEnv("SERVER_PORT", 8080),
-			Url:  getStringEnv("SERVER_URL", ""),
+			URL:  getStringEnv("SERVER_URL", ""),
 		},
 		Database: DatabaseConfig{
 			Host:         getStringEnv("DATABASE_HOST", "localhost"),
@@ -75,7 +101,8 @@ func Load() *Config {
 		},
 		Global: GlobalConfig{
 			SecretPhrase: getStringEnv("SECRET_PHRASE", "secret"),
-			LoggerLevel:  getIntEnv("LOGGER_LEVEL", -4),
+			LoggerLevel:  getLoggerLevel("LOGGER_LEVEL", -4),
 			CsvPath:      getStringEnv("CSV_PATH", "./pack/"),
-		}}
+		},
+	}
 }
