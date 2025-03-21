@@ -13,8 +13,8 @@
 <div id="app">
     <header>
         <a href="/main" class="btn login-btn">← Меню</a>
-        <div class="auth-buttons"><a href="/profile" class="btn login-btn">Профиль</a> <a href="/auth/signout"
-                                                                                          class="btn register-btn">Выйти</a>
+        <div class="auth-buttons"><a href="/profile" class="btn login-btn">Профиль</a>
+            <button class="btn register-btn" @click="signOut()">Выйти</button>
         </div>
     </header>
 

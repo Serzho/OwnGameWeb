@@ -74,6 +74,17 @@ document.addEventListener('DOMContentLoaded', () => {
             editPack(packId) {
                 window.location.href = `/editpack/${packId}`;
             },
+            async signOut(packId) {
+                try {
+                    const response = await fetch(`/auth/signout`, {
+                        method: 'POST'
+                    });
+
+                    window.location.href = '/'
+                } catch (error) {
+                    this.errorMessage = error.message;
+                }
+            },
 
             navigateProfile() {
                 window.location.href = '/profile';

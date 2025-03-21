@@ -182,7 +182,12 @@ func (h *ManageHandler) CreateGame(c *gin.Context) {
 		return
 	}
 
-	userID := c.GetInt("userID")
+	userID, err := getIntFromContext(c, "userID")
+	if err != nil {
+		slog.Warn("Error get userID", "error", err)
+		c.JSON(http.StatusBadRequest, gin.H{})
+		return
+	}
 
 	slog.Info("CreateGame", "title", title, "maxPlayers", maxPlayers, "packID", packID, "userID", userID)
 

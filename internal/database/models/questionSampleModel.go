@@ -1,9 +1,9 @@
 package models
 
 type QuestionSample struct {
-	ID      int
-	Pack    int
-	Content string
+	ID      int    `db:"id"`
+	Pack    int    `db:"pack"`
+	Content string `db:"content"`
 }
 
 type QuestionJSON struct {

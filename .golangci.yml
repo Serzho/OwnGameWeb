@@ -33,6 +33,7 @@ linters:
     - godox # TODO/BUG/FIXME ya zdec uzau
     - nlreturn #netu iskluchenii dlya loggera pered returnom
     - wsl # like nlreturn
+    - nosprintfhostport #Che? Che on mne vtiraet
 issues:
   exclude-rules:
     - path: ".*_test.go" 

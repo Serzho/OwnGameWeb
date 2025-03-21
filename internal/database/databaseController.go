@@ -157,7 +157,7 @@ func (d *DBController) AddGame(title string, inviteCode string, userID int, maxP
 	row := d.pool.QueryRow(
 		context.Background(),
 		`INSERT INTO "game" (title, status, invite_code, start_time, master_id, players_ids, max_players, sample)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING gameID;`,
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id;`,
 		title, "created", inviteCode, time.Now(), userID, "{}", maxPlayers, sampleID,
 	).Scan(&gameID)
 
@@ -256,7 +256,7 @@ func (d *DBController) AddSample(sample *models.QuestionSample) (int, error) {
 	var sampleID int
 	row := d.pool.QueryRow(
 		context.Background(),
-		`INSERT INTO "question_sample" (pack, content) VALUES ($1::int, $2) RETURNING sampleID;`,
+		`INSERT INTO "question_sample" (pack, content) VALUES ($1::int, $2) RETURNING id;`,
 		sample.Pack, sample.Content,
 	).Scan(&sampleID)
 

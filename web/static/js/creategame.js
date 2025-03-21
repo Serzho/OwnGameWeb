@@ -66,7 +66,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         body: JSON.stringify({
                             title: this.roomName,
                             maxPlayers: this.maxPlayers,
-                            packId: this.selectedPackId
+                            packID: this.selectedPackId
                         })
                     });
 

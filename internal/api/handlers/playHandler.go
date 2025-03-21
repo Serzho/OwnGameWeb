@@ -34,7 +34,7 @@ func NewPlayHandler(s *services.PlayService) *PlayHandler {
 }
 
 func (h *PlayHandler) WaitingRoomPage(c *gin.Context) {
-	_, exists := c.Get("gameId")
+	_, exists := c.Get("gameID")
 	if !exists {
 		slog.Warn("gameId not found in context")
 		c.Redirect(http.StatusTemporaryRedirect, "/main")

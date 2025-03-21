@@ -37,10 +37,10 @@ func Auth(cfg *config.Config) gin.HandlerFunc {
 
 		slog.Info("Setting claims", "claims", claims)
 
-		c.Set("userId", claims.ID)
+		c.Set("userID", claims.ID)
 
 		if claims.GameID != -1 {
-			c.Set("gameId", claims.GameID)
+			c.Set("gameID", claims.GameID)
 		}
 
 		c.Next()
