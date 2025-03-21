@@ -112,7 +112,7 @@ func (s *PlayService) GetGameInfo(gameID, userID int) (string, error) {
 	isHost := userID == game.MasterID
 	gameInfo := &models.GameInfoJSON{
 		Title: game.Title, Players: players, MaxPlayers: game.MaxPlayers, IsHost: isHost,
-		InviteCode: game.InviteCode,
+		InviteCode: game.InviteCode, Status: game.Status,
 	}
 	slog.Info("Marshalling gameinfo", "userID", userID, "gameinfo", gameInfo)
 	result, err := json.Marshal(gameInfo)

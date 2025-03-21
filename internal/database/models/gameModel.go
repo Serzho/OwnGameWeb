@@ -25,4 +25,5 @@ type GameInfoJSON struct {
 	MaxPlayers int          `json:"maxPlayers"`
 	IsHost     bool         `json:"isHost"`
 	InviteCode string       `json:"inviteCode"`
+	Status     string       `json:"status"`
 }

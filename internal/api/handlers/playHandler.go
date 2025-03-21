@@ -45,6 +45,42 @@ func (h *PlayHandler) WaitingRoomPage(c *gin.Context) {
 	c.HTML(http.StatusOK, "waitingroom.html", gin.H{})
 }
 
+func (h *PlayHandler) PlayerRoomPage(c *gin.Context) {
+	userID, err := getIntFromContext(c, "userID")
+	if err != nil {
+		slog.Warn("Error get userID", "err", err)
+		c.JSON(http.StatusBadRequest, gin.H{})
+
+		return
+
+	}
+
+	gameID, err := getIntFromContext(c, "gameID")
+	if err != nil {
+		slog.Warn("Error get gameID", "err", err)
+		c.JSON(http.StatusBadRequest, gin.H{})
+
+		return
+	}
+
+	isMaster, err := h.service.CheckIsMaster(userID, gameID)
+	if err != nil {
+		slog.Warn("Error checkIsMaster", "err", err, "userID", userID, "gameID", gameID)
+		c.JSON(http.StatusBadRequest, gin.H{})
+
+		return
+	}
+
+	if isMaster {
+		slog.Warn("User is master, not player", "userID", userID, "gameID", gameID)
+		c.Redirect(http.StatusTemporaryRedirect, "/play/masterroom")
+
+		return
+	}
+
+	c.HTML(http.StatusOK, "playerroom.html", gin.H{})
+}
+
 func (h *PlayHandler) MasterRoomPage(c *gin.Context) {
 	userID, err := getIntFromContext(c, "userID")
 	if err != nil {

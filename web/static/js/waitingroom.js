@@ -46,6 +46,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     this.maxPlayers = jdata.maxPlayers;
                     this.currentPlayers = jdata.players.length;
                     this.isHost = jdata.isHost;
+                    if( jdata.status === 'firststage'){
+                        window.location.href = '/play/playerroom';
+                    }
                 } catch (error) {
                     this.errorMessage = error.message;
                 }
