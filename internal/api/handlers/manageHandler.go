@@ -55,6 +55,75 @@ func (h *ManageHandler) ProfilePage(c *gin.Context) {
 	c.HTML(http.StatusOK, "profile.html", gin.H{})
 }
 
+func (h *ManageHandler) ProfileInfo(c *gin.Context) {
+	userID, err := getIntFromContext(c, "userID")
+	if err != nil {
+		slog.Warn("Error get userID", "error", err)
+		c.JSON(http.StatusBadRequest, gin.H{})
+		return
+	}
+
+	userData, err := h.service.GetUserData(userID)
+	if err != nil {
+		slog.Warn("Error get userData", "error", err, "userID", userID)
+		c.JSON(http.StatusBadRequest, gin.H{})
+		return
+	}
+
+	slog.Info("Successfully get user data", "userID", userID, "userData", userData)
+	c.JSON(http.StatusOK, gin.H{
+		"data": userData,
+	})
+}
+
+func (h *ManageHandler) UpdateProfile(c *gin.Context) {
+	userID, err := getIntFromContext(c, "userID")
+	if err != nil {
+		slog.Warn("Error get userID", "error", err)
+		c.JSON(http.StatusBadRequest, gin.H{})
+		return
+	}
+
+	jsonMap, err := utils.ParseJSONRequest(c)
+	if err != nil {
+		slog.Warn("Error parsing json request", "error", err)
+		c.JSON(http.StatusBadRequest, gin.H{})
+		return
+	}
+
+	newPassword, ok := jsonMap["newPassword"].(string)
+	if !ok {
+		slog.Warn("Error get newPassword", "userID", userID)
+		c.JSON(http.StatusBadRequest, gin.H{})
+		return
+	}
+
+	oldPassword, ok := jsonMap["oldPassword"].(string)
+	if !ok {
+		slog.Warn("Error get oldPassword", "userID", userID)
+		c.JSON(http.StatusBadRequest, gin.H{})
+		return
+	}
+
+	newName, ok := jsonMap["newName"].(string)
+	if !ok {
+		slog.Warn("Error get newName", "userID", userID)
+		c.JSON(http.StatusBadRequest, gin.H{})
+		return
+	}
+
+	slog.Info("Updating user data", "userID", userID)
+	err = h.service.UpdateUserData(userID, oldPassword, newPassword, newName)
+	if err != nil {
+		slog.Warn("Error update user data", "error", err, "userID", userID)
+		c.JSON(http.StatusBadRequest, gin.H{})
+		return
+	}
+
+	slog.Info("Successfully update user data", "userID", userID)
+	c.JSON(http.StatusOK, gin.H{})
+}
+
 func (h *ManageHandler) JoinGame(c *gin.Context) {
 	jsonMap, err := utils.ParseJSONRequest(c)
 	if err != nil {

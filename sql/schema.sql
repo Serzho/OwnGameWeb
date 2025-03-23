@@ -19,9 +19,9 @@ CREATE TABLE "user"(
     name VARCHAR(255) NOT NULL,
     email VARCHAR(255) NOT NULL,
     password CHAR(60) NOT NULL,
-    packs int[] NOT NULL DEFAULT '{}',
-    played_games INT NOT NULL DEFAULT 0,
-    won_games INT NOT NULL DEFAULT 0
+    packs int[] DEFAULT '{}',
+    played_games INT DEFAULT 0,
+    won_games INT DEFAULT 0
 );
 
 -- CONSTRAINTS FOR USER TABLE

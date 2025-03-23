@@ -21,4 +21,8 @@ var (
 	ErrFindGame            = errors.New("find game failed")
 	ErrJoinGame            = errors.New("join game failed")
 	ErrGenerateSample      = errors.New("generate sample failed")
+	ErrGetUserData         = errors.New("get user data failed")
+	ErrMarshalUserData     = errors.New("marshal user data failed")
+	ErrHashingPassword     = errors.New("hashing password failed")
+	ErrUpdateUser          = errors.New("update user failed")
 )

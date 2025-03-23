@@ -1,9 +1,13 @@
 package services
 
 import (
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"mime/multipart"
+	"strings"
+
+	"golang.org/x/crypto/bcrypt"
 
 	"OwnGameWeb/config"
 	"OwnGameWeb/internal/api/utils"
@@ -18,6 +22,62 @@ type ManageService struct {
 
 func NewManageService(c *database.DBController, cfg *config.Config) *ManageService {
 	return &ManageService{dbController: c, Cfg: cfg}
+}
+
+func (s *ManageService) GetUserData(userID int) (string, error) {
+	user, err := s.dbController.GetUser(userID)
+	if err != nil {
+		slog.Warn("Error getting user", "userID", userID, "error", err)
+		return "", ErrGetUserData
+	}
+
+	userData := models.UserDataJSON{Name: user.Name, PlayedGames: user.PlayedGames, WonGames: user.WonGames}
+	result, err := json.Marshal(userData)
+	if err != nil {
+		slog.Warn("Error marshalling userdata", "error", err, "user", user, "userData", userData)
+		return "", ErrMarshalUserData
+	}
+
+	return string(result), nil
+}
+
+func (s *ManageService) UpdateUserData(userID int, oldPassword string, newPassword string, newName string) error {
+	user, err := s.dbController.GetUser(userID)
+	if err != nil {
+		slog.Warn("Error getting user", "userID", userID, "error", err)
+		return ErrGetUserData
+	}
+
+	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(oldPassword))
+	if err != nil {
+		slog.Warn("Invalid password", "userID", userID, "error", err)
+		return ErrIncorrectPassword
+	}
+
+	preparedPassword := strings.TrimSpace(newPassword)
+	if len(preparedPassword) != 0 {
+		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(preparedPassword), 5)
+		if err != nil {
+			slog.Warn("Error hashing password", "error", err, "userID", userID)
+			return ErrHashingPassword
+		}
+
+		slog.Info("Updating password", "UserID", userID)
+		user.Password = string(hashedPassword)
+	}
+
+	if len(newName) != 0 {
+		slog.Info("Updating username", "UserID", userID)
+		user.Name = newName
+	}
+
+	err = s.dbController.UpdateUser(user)
+	if err != nil {
+		slog.Warn("Error updating user", "userID", userID, "error", err, "user", user)
+		return ErrUpdateUser
+	}
+
+	return nil
 }
 
 func (s *ManageService) JoinGame(code string, userID int) (int, error) {

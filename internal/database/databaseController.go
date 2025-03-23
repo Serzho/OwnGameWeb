@@ -152,6 +152,21 @@ func (d *DBController) AddUser(name, email, password string) error {
 	return nil
 }
 
+func (d *DBController) UpdateUser(user *models.User) error {
+	_, err := d.pool.Exec(
+		context.Background(),
+		`UPDATE "user" SET password = $1, name = $2 WHERE id = $3;`,
+		user.Password, user.Name, user.ID,
+	)
+	if err != nil {
+		slog.Warn("Error updating user", "error", err, "user", user)
+		return ErrInsertUser
+	}
+
+	slog.Info("Updated user", "user", user)
+	return nil
+}
+
 func (d *DBController) AddGame(title string, inviteCode string, userID int, maxPlayers int, sampleID int) (int, error) {
 	var gameID int
 	row := d.pool.QueryRow(

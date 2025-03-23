@@ -9,3 +9,9 @@ type User struct {
 	PlayedGames int    `db:"played_games"`
 	WonGames    int    `db:"won_games"`
 }
+
+type UserDataJSON struct {
+	Name        string `json:"name"`
+	PlayedGames int    `json:"playedGames"`
+	WonGames    int    `json:"wonGames"`
+}
