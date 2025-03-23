@@ -6,9 +6,9 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func RegisterPlayRoutes(r *gin.Engine, h *handlers.PlayHandler, m gin.HandlerFunc) *gin.RouterGroup {
+func RegisterPlayRoutes(r *gin.Engine, h *handlers.PlayHandler, m ...gin.HandlerFunc) *gin.RouterGroup {
 	group := r.Group("/play")
-	group.Use(m)
+	group.Use(m...)
 
 	group.GET("/waitingroom", h.WaitingRoomPage)
 	group.GET("/playerroom", h.PlayerRoomPage)

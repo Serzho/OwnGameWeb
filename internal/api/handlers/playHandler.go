@@ -52,7 +52,6 @@ func (h *PlayHandler) PlayerRoomPage(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{})
 
 		return
-
 	}
 
 	gameID, err := getIntFromContext(c, "gameID")

@@ -61,7 +61,7 @@ func main() {
 	overviewHandler := handlers.NewOverviewHandler()
 
 	routes.RegisterManageRoutes(router, manageHandler, middleware.Auth(cfg))
-	routes.RegisterPlayRoutes(router, playHandler, middleware.Auth(cfg))
+	routes.RegisterPlayRoutes(router, playHandler, middleware.Auth(cfg), middleware.Play())
 	routes.RegisterAuthRoutes(router, authHandler)
 	routes.RegisterOverviewRoutes(router, overviewHandler)
 
