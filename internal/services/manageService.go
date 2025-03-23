@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"mime/multipart"
+	"os"
 	"strings"
 
 	"golang.org/x/crypto/bcrypt"
@@ -22,6 +23,15 @@ type ManageService struct {
 
 func NewManageService(c *database.DBController, cfg *config.Config) *ManageService {
 	return &ManageService{dbController: c, Cfg: cfg}
+}
+
+func (s *ManageService) AddServerPack(userID, packID int) error {
+	err := s.dbController.AddServerPack(userID, packID)
+	if err != nil {
+		return ErrAddServerPack
+	}
+
+	return nil
 }
 
 func (s *ManageService) GetUserData(userID int) (string, error) {
@@ -192,18 +202,95 @@ func (s *ManageService) GetAllPacks(userID int) (*[]models.QuestionPackJSON, err
 	return &jsonPacks, nil
 }
 
-func (s *ManageService) GetPackFile(packID int) (string, error) {
+func (s *ManageService) GetServerPacks(userID int) (*[]models.QuestionPackJSON, error) {
+	slog.Info("Get server packs", "userID", userID)
+	userPacks, err := s.dbController.GetServerPacks(userID)
+	if err != nil {
+		slog.Warn("Can't get server packs", "userID", userID, "err", err)
+		return nil, ErrGetPack
+	}
+
+	jsonPacks := make([]models.QuestionPackJSON, 0, 5)
+
+	for _, val := range *userPacks {
+		jsonPacks = append(jsonPacks, models.QuestionPackJSON{ID: val.ID, Title: val.Title, IsOwner: userID == val.Owner})
+	}
+
+	slog.Info("Successfully get server packs", "userID", userID, "jsonPacks", jsonPacks)
+	return &jsonPacks, nil
+}
+
+func (s *ManageService) GetPack(packID int) (string, string, error) {
 	slog.Info("Get pack file", "packID", packID)
 	pack, err := s.dbController.GetPack(packID)
 	if err != nil {
 		slog.Warn("Can't find pack by id", "packID", packID, "err", err)
-		return "", ErrGetPack
+		return "", "", ErrGetPack
 	}
 
 	filename := fmt.Sprintf("%s%s", s.Cfg.Global.CsvPath, pack.Filename)
 
 	slog.Info("Successfully getting file from csv", "file", filename)
-	return filename, nil
+
+	slog.Info("Reading file", "path", filename)
+
+	content, err := os.ReadFile(filename)
+	if err != nil {
+		slog.Warn("Error reading file", "path", filename, "error", err)
+		return "", "", ErrReadingFile
+	}
+
+	return string(content), pack.Title, nil
+}
+
+func (s *ManageService) UpdatePackContent(packID, userID int, content string) error {
+	slog.Info("Get pack file", "packID", packID)
+	pack, err := s.dbController.GetPack(packID)
+	if err != nil {
+		slog.Warn("Can't find pack by id", "packID", packID, "err", err)
+		return ErrGetPack
+	}
+
+	if pack.Owner != userID {
+		slog.Warn("user is not owner", "userID", userID, "packID", packID)
+		return ErrUserNotOwner
+	}
+
+	filename := fmt.Sprintf("%s%s", s.Cfg.Global.CsvPath, pack.Filename)
+
+	slog.Info("Updating file in csv", "file", filename)
+
+	err = utils.UpdateFile([]byte(content), filename)
+	if err != nil {
+		slog.Warn("Error updating file in csv", "file", filename, "err", err)
+		return ErrUpdatePack
+	}
+
+	slog.Info("Successfully pack updated")
+
+	return nil
+}
+
+func (s *ManageService) UpdatePackTitle(packID, userID int, newTitle string) error {
+	slog.Info("Get pack file", "packID", packID)
+	pack, err := s.dbController.GetPack(packID)
+	if err != nil {
+		slog.Warn("Can't find pack by id", "packID", packID, "err", err)
+		return ErrGetPack
+	}
+
+	if pack.Owner != userID {
+		slog.Warn("user is not owner", "userID", userID, "packID", packID)
+		return ErrUserNotOwner
+	}
+
+	err = s.dbController.UpdatePackTitle(packID, newTitle)
+	if err != nil {
+		slog.Warn("Can't update pack title", "packID", packID, "err", err)
+		return ErrUpdatePack
+	}
+
+	return nil
 }
 
 func (s *ManageService) DeletePack(userID int, packID int) error {

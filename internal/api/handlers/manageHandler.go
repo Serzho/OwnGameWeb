@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
-	"os"
 	"strconv"
 
 	"OwnGameWeb/internal/api/utils"
@@ -291,6 +290,7 @@ func (h *ManageHandler) CreateGame(c *gin.Context) {
 }
 
 func (h *ManageHandler) GetAllPacks(c *gin.Context) {
+	// TODO: to rename
 	userID, err := getIntFromContext(c, "userID")
 	if err != nil {
 		slog.Warn("Error get userID", "err", err)
@@ -316,6 +316,185 @@ func (h *ManageHandler) GetAllPacks(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"code": http.StatusOK, "packs": packs})
 }
 
+func (h *ManageHandler) GetServerPacks(c *gin.Context) {
+	userID, err := getIntFromContext(c, "userID")
+	if err != nil {
+		slog.Warn("Error get userID", "err", err)
+		c.JSON(http.StatusBadRequest, gin.H{})
+
+		return
+	}
+
+	slog.Info("GetServerPacks", "userID", userID)
+
+	packs, err := h.service.GetServerPacks(userID)
+	if err != nil {
+		slog.Warn("Error getting server packs", "userID", userID, "error", err)
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    http.StatusBadRequest,
+			"message": "can not get server packs",
+		})
+
+		return
+	}
+
+	slog.Info("Success get server packs", "userID", userID)
+	c.JSON(http.StatusOK, gin.H{"code": http.StatusOK, "packs": packs})
+}
+
+func (h *ManageHandler) UpdatePackTitle(c *gin.Context) {
+	packID, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		slog.Warn("Error parsing id", "id", c.Param("id"), "error", err)
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    http.StatusBadRequest,
+			"message": "pack id is invalid",
+		})
+
+		return
+	}
+
+	userID, err := getIntFromContext(c, "userID")
+	if err != nil {
+		slog.Warn("Error get userID", "err", err)
+		c.JSON(http.StatusBadRequest, gin.H{})
+
+		return
+	}
+
+	jsonMap, err := utils.ParseJSONRequest(c)
+	if err != nil {
+		slog.Warn("Error parsing json request", "error", err)
+		c.JSON(http.StatusBadRequest, gin.H{})
+		return
+	}
+
+	newTitle, ok := jsonMap["title"].(string)
+	if !ok {
+		slog.Warn("Error get title", "userID", userID)
+		c.JSON(http.StatusBadRequest, gin.H{})
+		return
+	}
+
+	err = h.service.UpdatePackTitle(packID, userID, newTitle)
+	if err != nil {
+		slog.Warn("Error updating title", "userID", userID, "error", err)
+		c.JSON(http.StatusBadRequest, gin.H{})
+		return
+	}
+
+	slog.Info("Success update title", "userID", userID, "title", newTitle)
+	c.JSON(http.StatusOK, gin.H{})
+}
+
+func (h *ManageHandler) UpdatePackContent(c *gin.Context) {
+	packID, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		slog.Warn("Error parsing id", "id", c.Param("id"), "error", err)
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    http.StatusBadRequest,
+			"message": "pack id is invalid",
+		})
+
+		return
+	}
+
+	userID, err := getIntFromContext(c, "userID")
+	if err != nil {
+		slog.Warn("Error get userID", "err", err)
+		c.JSON(http.StatusBadRequest, gin.H{})
+
+		return
+	}
+
+	jsonMap, err := utils.ParseJSONRequest(c)
+	if err != nil {
+		slog.Warn("Error parsing json request", "error", err)
+		c.JSON(http.StatusBadRequest, gin.H{})
+		return
+	}
+
+	content, ok := jsonMap["content"].(string)
+	if !ok {
+		slog.Warn("Error get content", "userID", userID)
+		c.JSON(http.StatusBadRequest, gin.H{})
+		return
+	}
+
+	err = h.service.UpdatePackContent(packID, userID, content)
+	if err != nil {
+		slog.Warn("Error updating content", "userID", userID, "error", err)
+		c.JSON(http.StatusBadRequest, gin.H{})
+		return
+	}
+
+	slog.Info("Success update content", "userID", userID, "packID", packID)
+	c.JSON(http.StatusOK, gin.H{})
+}
+
+func (h *ManageHandler) AddServerPack(c *gin.Context) {
+	packID, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		slog.Warn("Error parsing id", "id", c.Param("id"), "error", err)
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    http.StatusBadRequest,
+			"message": "pack id is invalid",
+		})
+
+		return
+	}
+
+	userID, err := getIntFromContext(c, "userID")
+	if err != nil {
+		slog.Warn("Error get userID", "err", err)
+		c.JSON(http.StatusBadRequest, gin.H{})
+
+		return
+	}
+
+	slog.Info("AddServerPack", "userID", userID, "packID", packID)
+
+	err = h.service.AddServerPack(userID, packID)
+	if err != nil {
+		slog.Warn("Error adding server pack", "userID", userID, "packID", packID)
+		c.JSON(http.StatusBadRequest, gin.H{})
+		return
+	}
+
+	slog.Info("Success add server pack", "userID", userID, "packID", packID)
+	c.JSON(http.StatusOK, gin.H{})
+}
+
+func (h *ManageHandler) GetPack(c *gin.Context) {
+	packID, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		slog.Warn("Error parsing id", "id", c.Param("id"), "error", err)
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    http.StatusBadRequest,
+			"message": "pack id is invalid",
+		})
+
+		return
+	}
+
+	content, title, err := h.service.GetPack(packID)
+	if err != nil {
+		slog.Warn("Error getting pack file", "id", packID, "error", err)
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    http.StatusBadRequest,
+			"message": "cannot get pack file",
+		})
+
+		return
+	}
+
+	slog.Info("Success get pack", "title", title, "packID", packID)
+	c.JSON(http.StatusOK, gin.H{
+		"content": content,
+		"title":   title,
+	})
+}
+
 func (h *ManageHandler) DownloadPack(c *gin.Context) {
 	packID, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
@@ -330,7 +509,7 @@ func (h *ManageHandler) DownloadPack(c *gin.Context) {
 
 	slog.Info("GetPackFile", "id", packID)
 
-	filepath, err := h.service.GetPackFile(packID)
+	content, title, err := h.service.GetPack(packID)
 	if err != nil {
 		slog.Warn("Error getting pack file", "id", packID, "error", err)
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -341,34 +520,21 @@ func (h *ManageHandler) DownloadPack(c *gin.Context) {
 		return
 	}
 
-	slog.Info("Reading file", "path", filepath)
-
-	content, err := os.ReadFile(filepath)
-	if err != nil {
-		slog.Warn("Error reading file", "path", filepath, "error", err)
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code":    http.StatusBadRequest,
-			"message": "cannot read pack file",
-		})
-
-		return
-	}
-
-	slog.Info("Writing file", "path", filepath)
+	slog.Info("Writing file", "title", title)
 	c.Header("Content-Disposition", "attachment; filename=pack")
 	c.Header("Content-Type", "application/text/plain")
 	c.Header("Accept-Length", strconv.Itoa(len(content)))
 
-	_, err = c.Writer.Write(content)
+	_, err = c.Writer.Write([]byte(content))
 	if err != nil {
-		slog.Warn("Error writing file", "path", filepath, "error", err)
+		slog.Warn("Error writing file", "title", title, "error", err)
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    http.StatusBadRequest,
 			"message": "cannot write pack file",
 		})
 	}
 
-	slog.Info("Success writing file", "path", filepath)
+	slog.Info("Success writing file", "title", title, "packID", packID)
 	c.JSON(http.StatusOK, gin.H{
 		"msg": "Download file successfully",
 	})

@@ -16,6 +16,25 @@ import (
 	"OwnGameWeb/internal/database/models"
 )
 
+func UpdateFile(content []byte, filename string) error {
+	slog.Info("Updating file in csv", "file", filename)
+	file, err := os.OpenFile(filename, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o644)
+	if err != nil {
+		return ErrOpenFile
+	}
+	defer func() {
+		_ = file.Close()
+		slog.Warn("Error closing file", "file", filename)
+	}()
+
+	_, err = file.Write(content)
+	if err != nil {
+		return ErrWritingFile
+	}
+
+	return nil
+}
+
 func SavePackGame(cfg *config.Config, file multipart.File, header *multipart.FileHeader) (string, error) {
 	if header.Header.Get("Content-Type") != "text/csv" {
 		return "", ErrInvalidFileType

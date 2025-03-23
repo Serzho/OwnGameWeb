@@ -18,11 +18,17 @@ func RegisterManageRoutes(r *gin.Engine, h *handlers.ManageHandler, m gin.Handle
 	group.GET("/profile", h.ProfilePage)
 	group.GET("/profile/info", h.ProfileInfo)
 	group.GET("/getallpacks", h.GetAllPacks)
+	group.GET("/getserverpacks", h.GetServerPacks)
 	group.GET("/downloadpack/:id", h.DownloadPack)
+	group.GET("/getpack/:id", h.GetPack)
 
 	group.POST("/joingame", h.JoinGame)
 	group.POST("/addpack", h.AddPack)
-	group.POST("/profile/update", h.UpdateProfile)
+	group.POST("/addserverpack/:id", h.AddServerPack)
+
+	group.PUT("/profile/update", h.UpdateProfile)
+	group.PUT("/updatepacktitle/:id", h.UpdatePackTitle)
+	group.PUT("/updatepackfile/:id", h.UpdatePackContent)
 
 	group.DELETE("/deletepack/:id", h.DeletePack)
 

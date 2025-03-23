@@ -1,3 +1,5 @@
+// noinspection ExceptionCaughtLocallyJS
+
 document.addEventListener('DOMContentLoaded', () => {
     const { createApp } = Vue;
 
@@ -9,17 +11,25 @@ document.addEventListener('DOMContentLoaded', () => {
             return {
                 packs: [],
                 isLoading: false,
-                errorMessage: ''
+                errorMessage: '',
+                showEditModal: false,
+                editingPack: { id: null, title: '', content: '' },
+                showServerPacks: false,
+                serverPacks: [],
+                searchQuery: ''
+            }
+        },
+        computed: {
+            filteredServerPacks() {
+                return this.serverPacks.filter(pack =>
+                    pack.title.toLowerCase().includes(this.searchQuery.toLowerCase())
+                );
             }
         },
         mounted() {
             this.loadPacks();
         },
         methods: {
-            addFromServer() {
-                // Заглушка для будущей реализации
-                console.log('Добавление с сервера');
-            },
 
             downloadPack(packId) {
                 window.location.href = `/downloadpack/${packId}`;
@@ -71,9 +81,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             },
 
-            editPack(packId) {
-                window.location.href = `/editpack/${packId}`;
-            },
             async signOut(packId) {
                 try {
                     const response = await fetch(`/auth/signout`, {
@@ -88,6 +95,72 @@ document.addEventListener('DOMContentLoaded', () => {
 
             navigateProfile() {
                 window.location.href = '/profile';
+            },
+            async editPack(packId) {
+                try {
+                    const response = await fetch(`/getpack/${packId}`);
+                    const data = await response.json();
+                    this.editingPack = {
+                        id: packId,
+                        title: data.title,
+                        content: data.content
+                    };
+                    this.showEditModal = true;
+                } catch (error) {
+                    this.errorMessage = 'Ошибка загрузки пакета';
+                }
+            },
+
+            async savePackName() {
+                try {
+                    await fetch(`/updatepacktitle/${this.editingPack.id}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ title: this.editingPack.title })
+                    });
+                    await this.loadPacks();
+                } catch (error) {
+                    this.errorMessage = 'Ошибка сохранения имени';
+                }
+            },
+
+            async savePackFile() {
+                try {
+                    await fetch(`/updatepackfile/${this.editingPack.id}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'text/csv' },
+                        body: JSON.stringify({ content: this.editingPack.content})
+                    });
+                    this.showEditModal = false;
+                } catch (error) {
+                    this.errorMessage = 'Ошибка сохранения файла';
+                }
+            },
+
+            closeModal() {
+                this.showEditModal = false;
+                this.editingPack = { id: null, title: '', content: '' };
+            },
+
+            async loadServerPacks() {
+                try {
+                    const response = await fetch('/getserverpacks');
+                    const data = await response.json();
+                    this.serverPacks = data.packs;
+                    this.showServerPacks = true;
+                } catch (error) {
+                    this.errorMessage = 'Ошибка загрузки пакетов';
+                }
+            },
+
+            async addServerPack(packId) {
+                try {
+                    await fetch(`/addserverpack/${packId}`, { method: 'POST' });
+                    await this.loadPacks();
+                    this.showServerPacks = false;
+                } catch (error) {
+                    this.errorMessage = 'Ошибка добавления пакета';
+                }
             }
         }
     }).mount('#app');

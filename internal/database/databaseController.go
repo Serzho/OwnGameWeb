@@ -167,6 +167,21 @@ func (d *DBController) UpdateUser(user *models.User) error {
 	return nil
 }
 
+func (d *DBController) UpdatePackTitle(packID int, title string) error {
+	_, err := d.pool.Exec(
+		context.Background(),
+		`UPDATE "question_pack" SET title = $1 WHERE id = $2;`,
+		title, packID,
+	)
+	if err != nil {
+		slog.Warn("Error updating pack", "error", err, "packID", packID)
+		return ErrInsertUser
+	}
+
+	slog.Info("Updated user", "packID", packID, "title", title)
+	return nil
+}
+
 func (d *DBController) AddGame(title string, inviteCode string, userID int, maxPlayers int, sampleID int) (int, error) {
 	var gameID int
 	row := d.pool.QueryRow(
@@ -201,6 +216,21 @@ func (d *DBController) GetCurrentGameByMasterID(masterID int) (*models.Game, err
 
 	slog.Info("Game found", "masterID", masterID, "game", game)
 	return &game, nil
+}
+
+func (d *DBController) AddServerPack(userID, packID int) error {
+	_, err := d.pool.Exec(
+		context.Background(),
+		`UPDATE "user" SET packs = array_append(packs, $1::int)
+			WHERE id=$2`, packID, userID,
+	)
+	if err != nil {
+		slog.Warn("Error adding server pack", "error", err, "id", packID, "user", userID)
+		return ErrAddServerPack
+	}
+
+	slog.Info("Successfully added server pack", "id", packID, "user", userID)
+	return nil
 }
 
 func (d *DBController) AddPack(userID int, filename string) error {
@@ -265,6 +295,30 @@ func (d *DBController) GetUserPacks(userID int) (*[]models.QuestionPack, error) 
 	}
 
 	slog.Info("Get user packs", "id", userID, "packs", packs)
+	return &packs, nil
+}
+
+func (d *DBController) GetServerPacks(userID int) (*[]models.QuestionPack, error) {
+	var packs []models.QuestionPack
+
+	rows, err := d.pool.Query(context.Background(), `
+        SELECT  p.id, title, filename, p.owner  FROM "user" u
+			JOIN LATERAL unnest(packs) AS pack_id ON true
+			JOIN question_pack p ON p.id = pack_id
+			WHERE u.id != $1;
+    `, userID)
+	if err != nil {
+		slog.Warn("Error getting server packs", "error", err, "id", userID)
+		return nil, errors.New("query error")
+	}
+
+	err = pgxscan.ScanAll(&packs, rows)
+	if err != nil {
+		slog.Warn("Error getting server packs", "error", err, "id", userID)
+		return nil, ErrGetServerPacks
+	}
+
+	slog.Info("Get server packs", "id", userID, "packs", packs)
 	return &packs, nil
 }
 

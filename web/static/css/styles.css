@@ -635,3 +635,86 @@ button:disabled:hover {
     75% { transform: translateX(-5px); }
     100% { transform: translateX(0); }
 }
+
+
+/* Добавить в styles.css */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background: white;
+    padding: 2rem;
+    border-radius: 10px;
+    width: 80%;
+    max-width: 800px;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+}
+
+.csv-editor {
+    flex: 1;
+    margin: 1rem 0;
+    padding: 1rem;
+    border: 2px solid #cbd5e0;
+    border-radius: 5px;
+    font-family: monospace;
+    white-space: pre;
+}
+
+.server-packs-modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    padding: 2rem;
+    border-radius: 10px;
+    box-shadow: 0 0 20px rgba(0,0,0,0.2);
+    z-index: 1001;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.server-packs-list {
+    list-style: none;
+    padding: 0;
+    margin: 1rem 0;
+}
+
+.server-packs-list li {
+    padding: 0.8rem;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.server-packs-list li:hover {
+    background: #f0f4f8;
+}
+
+.search-box {
+    margin-bottom: 1rem;
+}
+
+.search-box input {
+    width: 100%;
+    padding: 0.8rem;
+    border: 2px solid #cbd5e0;
+    border-radius: 5px;
+}

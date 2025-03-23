@@ -25,4 +25,8 @@ var (
 	ErrMarshalUserData     = errors.New("marshal user data failed")
 	ErrHashingPassword     = errors.New("hashing password failed")
 	ErrUpdateUser          = errors.New("update user failed")
+	ErrAddServerPack       = errors.New("add server pack failed")
+	ErrReadingFile         = errors.New("read file failed")
+	ErrUserNotOwner        = errors.New("user not owner")
+	ErrUpdatePack          = errors.New("update pack failed")
 )

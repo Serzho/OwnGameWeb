@@ -50,7 +50,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 try {
                     const response = await fetch('/profile/update', {
-                        method: 'POST',
+                        method: 'PUT',
                         headers: {
                             'Content-Type': 'application/json'
                         },

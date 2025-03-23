@@ -25,4 +25,5 @@ var (
 	ErrSelectThemes            = errors.New("select themes failed")
 	ErrGetThemes               = errors.New("get themes failed")
 	ErrHandleTheme             = errors.New("handle theme failed")
+	ErrWritingFile             = errors.New("writing file failed")
 )

@@ -17,4 +17,6 @@ var (
 	ErrGetUserByEmail      = errors.New("get user by email failed")
 	ErrGetUser             = errors.New("get user failed")
 	ErrGetPack             = errors.New("get pack failed")
+	ErrGetServerPacks      = errors.New("get server packs failed")
+	ErrAddServerPack       = errors.New("add server pack failed")
 )

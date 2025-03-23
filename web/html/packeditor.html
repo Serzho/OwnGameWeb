@@ -11,6 +11,42 @@
 </head>
 <body>
 <div id="app">
+    <div class="modal-overlay" v-if="showEditModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Редактирование пакета</h3>
+                <button class="btn close-btn" @click="closeModal">×</button>
+            </div>
+
+            <div class="modal-body">
+                <div class="form-group">
+                    <input type="text" v-model="editingPack.title" class="pack-title-input">
+                    <button class="btn register-btn" @click="savePackName">Сохранить имя</button>
+                </div>
+
+                <textarea v-model="editingPack.content" class="csv-editor"></textarea>
+
+                <div class="modal-footer">
+                    <button class="btn register-btn" @click="savePackFile">Сохранить файл</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Выпадающий список пакетов -->
+    <div class="server-packs-modal" v-if="showServerPacks">
+        <div class="server-packs-content">
+            <div class="search-box">
+                <input type="text" v-model="searchQuery" placeholder="Поиск пакетов...">
+            </div>
+            <ul class="server-packs-list">
+                <li v-for="pack in filteredServerPacks"
+                    @click="addServerPack(pack.id)">
+                    [[ pack.title ]] (ID: [[ pack.id ]])
+                </li>
+            </ul>
+        </div>
+    </div>
     <header>
         <a href="/main" class="btn login-btn">← Меню</a>
         <div class="auth-buttons"><a href="/profile" class="btn login-btn">Профиль</a>
@@ -29,7 +65,7 @@
                     </span>
                     <input type="file" hidden @change="handleFileUpload" accept=".csv">
                 </label>
-                <button class="btn add-btn server-btn" @click="addFromServer">
+                <button class="btn add-btn server-btn" @click="loadServerPacks">
                     <span class="add-btn-content">
                         <span class="plus-icon">↓</span>
                         Добавить с сервера
