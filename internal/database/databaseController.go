@@ -156,9 +156,10 @@ func (d *DBController) AddGame(title string, inviteCode string, userID int, maxP
 	var gameID int
 	row := d.pool.QueryRow(
 		context.Background(),
-		`INSERT INTO "game" (title, status, invite_code, start_time, master_id, players_ids, max_players, sample)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id;`,
-		title, "created", inviteCode, time.Now(), userID, "{}", maxPlayers, sampleID,
+		`INSERT INTO "game" 
+    	(title, status, invite_code, start_time, master_id, players_ids, max_players, sample, used_questions)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id;`,
+		title, "created", inviteCode, time.Now(), userID, "{}", maxPlayers, sampleID, "{}",
 	).Scan(&gameID)
 
 	if row != nil {

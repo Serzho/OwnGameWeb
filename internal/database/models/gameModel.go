@@ -3,15 +3,18 @@ package models
 import "time"
 
 type Game struct {
-	ID         int       `db:"id"`
-	Title      string    `db:"title"`
-	Status     string    `db:"status"`
-	InviteCode string    `db:"invite_code"`
-	StartTime  time.Time `db:"start_time"`
-	MasterID   int       `db:"master_id"`
-	PlayersIDs []int     `db:"players_ids"`
-	MaxPlayers int       `db:"max_players"`
-	Sample     int       `db:"sample"`
+	ID            int       `db:"id"`
+	Title         string    `db:"title"`
+	Status        string    `db:"status"`
+	InviteCode    string    `db:"invite_code"`
+	StartTime     time.Time `db:"start_time"`
+	Master        int       `db:"master"`
+	PlayersIDs    []int     `db:"players_ids"`
+	MaxPlayers    int       `db:"max_players"`
+	Sample        int       `db:"sample"`
+	UsedQuestions []int     `db:"used_questions"`
+	GameScore     string    `db:"game_score"`
+	Winner        int       `db:"winner"`
 }
 
 type PlayerJSON struct {

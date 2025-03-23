@@ -26,8 +26,8 @@ func (s *PlayService) RemovePlayer(gameID, masterID, playerID int) error {
 		return errors.New("game not found")
 	}
 
-	if game.MasterID != masterID && masterID != playerID {
-		slog.Warn("MasterID is not match", "game", game, "masterID", masterID, "playerID", playerID)
+	if game.Master != masterID && masterID != playerID {
+		slog.Warn("Master is not match", "game", game, "masterID", masterID, "playerID", playerID)
 		return errors.New("master id not match")
 	}
 
@@ -50,8 +50,8 @@ func (s *PlayService) CancelGame(userID, gameID int) error {
 		return errors.New("game not found")
 	}
 
-	if game.MasterID != userID {
-		slog.Warn("MasterID is not match", "game", game, "userID", userID)
+	if game.Master != userID {
+		slog.Warn("Master is not match", "game", game, "userID", userID)
 		return errors.New("master id not match")
 	}
 
@@ -74,8 +74,8 @@ func (s *PlayService) StartGame(userID, gameID int) error {
 		return errors.New("game not found")
 	}
 
-	if game.MasterID != userID {
-		slog.Warn("MasterID is not match", "game", game, "userID", userID)
+	if game.Master != userID {
+		slog.Warn("Master is not match", "game", game, "userID", userID)
 		return errors.New("master id not match")
 	}
 
@@ -109,7 +109,7 @@ func (s *PlayService) GetGameInfo(gameID, userID int) (string, error) {
 		players = append(players, models.PlayerJSON{ID: playerID, Name: user.Name})
 	}
 
-	isHost := userID == game.MasterID
+	isHost := userID == game.Master
 	gameInfo := &models.GameInfoJSON{
 		Title: game.Title, Players: players, MaxPlayers: game.MaxPlayers, IsHost: isHost,
 		InviteCode: game.InviteCode, Status: game.Status,
@@ -132,7 +132,7 @@ func (s *PlayService) CheckIsMaster(userID, gameID int) (bool, error) {
 		slog.Warn("Error getting game", "id", gameID, "error", err)
 	}
 
-	return game.MasterID == userID, nil
+	return game.Master == userID, nil
 }
 
 func (s *PlayService) GetSampleContent(gameID, userID int) (string, error) {
@@ -143,8 +143,8 @@ func (s *PlayService) GetSampleContent(gameID, userID int) (string, error) {
 		return "", errors.New("game not found")
 	}
 
-	if game.MasterID != userID {
-		slog.Warn("MasterID is not match", "game", game, "userID", userID)
+	if game.Master != userID {
+		slog.Warn("Master is not match", "game", game, "userID", userID)
 		return "", errors.New("master id not match")
 	}
 

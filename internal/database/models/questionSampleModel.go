@@ -13,6 +13,7 @@ type QuestionJSON struct {
 	Attachment string `json:"attachment"`
 	Question   string `json:"question"`
 	Answer     string `json:"answer"`
+	Price      int    `json:"price"`
 }
 
 type ThemeJSON struct {
