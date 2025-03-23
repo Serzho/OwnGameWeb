@@ -62,6 +62,34 @@ func DeletePackGame(filename string, cfg *config.Config) error {
 	return nil
 }
 
+func parseRecord(record []string) (int, int, int, int, error) {
+	if record[0] != "1" && record[0] != "2" && record[0] != "3" {
+		return 0, 0, 0, 0, ErrEmptyRecord
+	}
+
+	round, err := strconv.Atoi(record[0])
+	if err != nil {
+		return 0, 0, 0, 0, ErrInvalidFieldType
+	}
+
+	themeID, err := strconv.Atoi(record[2])
+	if err != nil {
+		return 0, 0, 0, 0, ErrInvalidFieldType
+	}
+
+	questionID, err := strconv.Atoi(record[3])
+	if err != nil {
+		return 0, 0, 0, 0, ErrInvalidFieldType
+	}
+
+	level, err := strconv.Atoi(record[4])
+	if err != nil {
+		return 0, 0, 0, 0, ErrInvalidFieldType
+	}
+
+	return round, themeID, questionID, level, nil
+}
+
 func ParseQuestions(filename string) (map[int]map[int]models.ThemeJSON, error) {
 	slog.Info("Parse Questions: ", "filename", filename)
 
@@ -93,28 +121,10 @@ func ParseQuestions(filename string) (map[int]map[int]models.ThemeJSON, error) {
 	slog.Info("Parse questions: ", "records", len(records)-1)
 
 	for _, record := range records[1:] {
-		if record[0] != "1" && record[0] != "2" && record[0] != "3" {
+		round, themeID, questionID, level, err := parseRecord(record)
+		if err != nil {
+			slog.Warn("Parse record", "record", record, "err", err)
 			continue
-		}
-
-		round, err := strconv.Atoi(record[0])
-		if err != nil {
-			return nil, ErrInvalidFieldType
-		}
-
-		themeID, err := strconv.Atoi(record[2])
-		if err != nil {
-			return nil, ErrInvalidFieldType
-		}
-
-		questionID, err := strconv.Atoi(record[3])
-		if err != nil {
-			return nil, ErrInvalidFieldType
-		}
-
-		level, err := strconv.Atoi(record[4])
-		if err != nil {
-			return nil, ErrInvalidFieldType
 		}
 
 		themes, ok := rounds[round]
@@ -147,51 +157,98 @@ func ParseQuestions(filename string) (map[int]map[int]models.ThemeJSON, error) {
 	return rounds, nil
 }
 
-func GenerateSample(pack *models.QuestionPack, cfg *config.Config) (*models.QuestionSample, error) {
-	seqToSlice := func(seq iter.Seq[int]) []int {
-		slice := make([]int, 0, 10)
-		for val := range seq {
-			slice = append(slice, val)
-		}
-
-		return slice
-	}
-
-	slog.Info("Generating Sample: ", "packId", pack.ID)
-
-	rounds, err := ParseQuestions(fmt.Sprintf("%s%s", cfg.Global.CsvPath, pack.Filename))
-	if err != nil {
-		return nil, ErrParseQuestions
-	}
-
-	firstRoundThemes, ok := rounds[1]
-	if !ok {
-		return nil, ErrThemeNotFound
-	}
-
+func selectThemes(
+	firstRoundThemes, secondRoundThemes, thirdRoundThemes map[int]models.ThemeJSON,
+) ([]int, []int, []int, error) {
 	firstSelectedThemes, err := SelectRandomValues(seqToSlice(maps.Keys(firstRoundThemes)), 5)
 	if err != nil {
-		return nil, ErrSelectRandomValues
-	}
-
-	secondRoundThemes, ok := rounds[2]
-	if !ok {
-		return nil, ErrThemeNotFound
+		return nil, nil, nil, ErrSelectRandomValues
 	}
 
 	secondSelectedThemes, err := SelectRandomValues(seqToSlice(maps.Keys(secondRoundThemes)), 5)
 	if err != nil {
-		return nil, ErrSelectRandomValues
-	}
-
-	thirdRoundThemes, ok := rounds[3]
-	if !ok {
-		return nil, ErrThemeNotFound
+		return nil, nil, nil, ErrSelectRandomValues
 	}
 
 	thirdSelectedThemes, err := SelectRandomValues(seqToSlice(maps.Keys(thirdRoundThemes)), 1)
 	if err != nil {
+		return nil, nil, nil, ErrSelectRandomValues
+	}
+
+	return firstSelectedThemes, secondSelectedThemes, thirdSelectedThemes, nil
+}
+
+func seqToSlice(seq iter.Seq[int]) []int {
+	slice := make([]int, 0, 10)
+	for val := range seq {
+		slice = append(slice, val)
+	}
+
+	return slice
+}
+
+func getThemes(csvPath, filename string) (
+	map[int]models.ThemeJSON, map[int]models.ThemeJSON, map[int]models.ThemeJSON, error,
+) {
+	rounds, err := ParseQuestions(fmt.Sprintf("%s%s", csvPath, filename))
+	if err != nil {
+		return nil, nil, nil, ErrParseQuestions
+	}
+
+	firstRoundThemes, ok := rounds[1]
+	if !ok {
+		return nil, nil, nil, ErrThemeNotFound
+	}
+
+	secondRoundThemes, ok := rounds[2]
+	if !ok {
+		return nil, nil, nil, ErrThemeNotFound
+	}
+
+	thirdRoundThemes, ok := rounds[3]
+	if !ok {
+		return nil, nil, nil, ErrThemeNotFound
+	}
+
+	return firstRoundThemes, secondRoundThemes, thirdRoundThemes, nil
+}
+
+func handleTheme(roundThemes map[int]models.ThemeJSON, themeID int) (*models.ThemeJSON, error) {
+	theme, ok := roundThemes[themeID]
+	if !ok {
+		return nil, ErrThemeNotFound
+	}
+
+	questionIndList := make([]int, 0, len(theme.Questions))
+	for i := range theme.Questions {
+		questionIndList = append(questionIndList, i)
+	}
+
+	selectedQuestions, err := SelectRandomValues(questionIndList, 5)
+	if err != nil {
 		return nil, ErrSelectRandomValues
+	}
+
+	questionList := make([]models.QuestionJSON, 0, 5)
+	for _, ind := range selectedQuestions {
+		questionList = append(questionList, theme.Questions[ind])
+	}
+
+	return &models.ThemeJSON{Title: theme.Title, Questions: questionList}, nil
+}
+
+func GenerateSample(pack *models.QuestionPack, cfg *config.Config) (*models.QuestionSample, error) {
+	slog.Info("Generating Sample: ", "packId", pack.ID)
+
+	firstRoundThemes, secondRoundThemes, thirdRoundThemes, err := getThemes(cfg.Global.CsvPath, pack.Filename)
+	if err != nil {
+		return nil, ErrGetThemes
+	}
+
+	firstSelectedThemes, secondSelectedThemes, thirdSelectedThemes, err := selectThemes(
+		firstRoundThemes, secondRoundThemes, thirdRoundThemes)
+	if err != nil {
+		return nil, ErrSelectThemes
 	}
 
 	firstRound := make([]*models.ThemeJSON, 0, 20)
@@ -201,56 +258,24 @@ func GenerateSample(pack *models.QuestionPack, cfg *config.Config) (*models.Ques
 	var finalRound *models.ThemeJSON
 
 	for _, themeID := range firstSelectedThemes {
-		theme, ok := firstRoundThemes[themeID]
-		if !ok {
-			return nil, ErrThemeNotFound
-		}
-
-		questionIndList := make([]int, 0, len(theme.Questions))
-		for i := range theme.Questions {
-			questionIndList = append(questionIndList, i)
-		}
-
-		selectedQuestions, err := SelectRandomValues(questionIndList, 5)
+		theme, err := handleTheme(firstRoundThemes, themeID)
 		if err != nil {
-			return nil, ErrSelectRandomValues
+			return nil, ErrHandleTheme
 		}
 
-		questionList := make([]models.QuestionJSON, 0, 5)
-		for _, ind := range selectedQuestions {
-			questionList = append(questionList, theme.Questions[ind])
-		}
-
-		firstRound = append(firstRound, &models.ThemeJSON{Title: theme.Title, Questions: questionList})
+		firstRound = append(firstRound, theme)
 	}
 
 	for _, themeID := range secondSelectedThemes {
-		theme, ok := secondRoundThemes[themeID]
-		if !ok {
-			return nil, ErrThemeNotFound
-		}
-
-		questionIndList := make([]int, 0, len(theme.Questions))
-		for i := range theme.Questions {
-			questionIndList = append(questionIndList, i)
-		}
-
-		selectedQuestions, err := SelectRandomValues(questionIndList, 5)
+		theme, err := handleTheme(secondRoundThemes, themeID)
 		if err != nil {
-			return nil, ErrSelectRandomValues
+			return nil, ErrHandleTheme
 		}
 
-		questionList := make([]models.QuestionJSON, 0, 5)
-		for _, ind := range selectedQuestions {
-			questionList = append(questionList, theme.Questions[ind])
-		}
-
-		secondRound = append(secondRound, &models.ThemeJSON{Title: theme.Title, Questions: questionList})
+		secondRound = append(secondRound, theme)
 	}
 
-	themeID := thirdSelectedThemes[0]
-
-	theme, ok := thirdRoundThemes[themeID]
+	theme, ok := thirdRoundThemes[thirdSelectedThemes[0]]
 	if !ok {
 		return nil, ErrThemeNotFound
 	}

@@ -21,6 +21,7 @@ linters-settings:
     excludes:
       - G404
 
+
 linters:
   enable-all: true
   disable:
@@ -34,6 +35,7 @@ linters:
     - nlreturn #netu iskluchenii dlya loggera pered returnom
     - wsl # like nlreturn
     - nosprintfhostport #Che? Che on mne vtiraet
+    - cyclop # normalno ne nastraivaesta
 issues:
   exclude-rules:
     - path: ".*_test.go" 

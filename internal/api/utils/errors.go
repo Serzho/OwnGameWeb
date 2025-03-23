@@ -21,4 +21,8 @@ var (
 	ErrNotEnoughValuesToSelect = errors.New("not enough values to select")
 	ErrGenerateInviteCode      = errors.New("generate invite code failed")
 	ErrCreatingFile            = errors.New("creating file failed")
+	ErrEmptyRecord             = errors.New("empty record")
+	ErrSelectThemes            = errors.New("select themes failed")
+	ErrGetThemes               = errors.New("get themes failed")
+	ErrHandleTheme             = errors.New("handle theme failed")
 )
