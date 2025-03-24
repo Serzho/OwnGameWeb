@@ -37,6 +37,7 @@ linters:
     - nosprintfhostport #Che? Che on mne vtiraet
     - cyclop # normalno ne nastraivaesta
     - dupl # hz kak mozhna uzat v API
+    - paralleltest
 
 issues:
   exclude-rules:
