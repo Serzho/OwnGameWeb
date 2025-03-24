@@ -55,7 +55,7 @@ func main() {
 	manageService := services.NewManageService(dbController, cfg)
 	playService := services.NewPlayService(dbController)
 
-	authHandler := handlers.NewAuthHandler(authService)
+	authHandler := handlers.NewAuthHandler(authService, cfg)
 	manageHandler := handlers.NewManageHandler(manageService)
 	playHandler := handlers.NewPlayHandler(playService)
 	overviewHandler := handlers.NewOverviewHandler()
