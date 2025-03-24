@@ -36,6 +36,8 @@ linters:
     - wsl # like nlreturn
     - nosprintfhostport #Che? Che on mne vtiraet
     - cyclop # normalno ne nastraivaesta
+    - dupl # hz kak mozhna uzat v API
+
 issues:
   exclude-rules:
     - path: ".*_test.go" 
