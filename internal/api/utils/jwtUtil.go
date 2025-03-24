@@ -4,7 +4,7 @@ import (
 	"errors"
 	"log/slog"
 
-	jwt "github.com/golang-jwt/jwt/v5"
+	"github.com/golang-jwt/jwt/v5"
 )
 
 type UserClaims struct {
