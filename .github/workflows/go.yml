@@ -19,6 +19,9 @@ jobs:
       - name: Install dependencies
         run: go mod download
 
+      - name: tidy
+        run: go mod tidy
+
       - name: Run Tests
         run: go test -v ./cmd/app
 
@@ -35,6 +38,9 @@ jobs:
 
       - name: Install dependencies
         run: go mod download
+
+      - name: tidy
+        run: go mod tidy
 
       - name: Run golangci-lint
         uses: golangci/golangci-lint-action@v3
