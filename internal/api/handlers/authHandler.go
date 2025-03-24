@@ -5,6 +5,8 @@ import (
 	"log/slog"
 	"net/http"
 
+	"OwnGameWeb/config"
+
 	"OwnGameWeb/internal/api/utils"
 	"OwnGameWeb/internal/services"
 
@@ -12,11 +14,12 @@ import (
 )
 
 type AuthHandler struct {
-	service *services.AuthService
+	service services.AuthService
+	Cfg     *config.Config
 }
 
-func NewAuthHandler(s *services.AuthService) *AuthHandler {
-	return &AuthHandler{service: s}
+func NewAuthHandler(s services.AuthService, c *config.Config) *AuthHandler {
+	return &AuthHandler{service: s, Cfg: c}
 }
 
 func (h *AuthHandler) SignIn(c *gin.Context) {
@@ -55,7 +58,7 @@ func (h *AuthHandler) SignIn(c *gin.Context) {
 	gameID := -1
 	slog.Info("Creating jwt token", "userID", userID, "gameID", gameID)
 
-	token, err := utils.JwtCreate(userID, gameID, h.service.Cfg.Global.SecretPhrase)
+	token, err := utils.JwtCreate(userID, gameID, h.Cfg.Global.SecretPhrase)
 	if err != nil {
 		slog.Warn("SignIn: Failed to create jwt token", "error", err)
 		c.JSON(http.StatusUnauthorized, gin.H{

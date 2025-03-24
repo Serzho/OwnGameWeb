@@ -10,16 +10,22 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-type AuthService struct {
+type AuthService interface {
+	SignIn(email, password string) (int, error)
+	SignUp(name, email, password string) error
+	RecoverPassword(email string) error
+}
+
+type AuthServiceImpl struct {
 	dbController *database.DBController
 	Cfg          *config.Config
 }
 
-func NewAuthService(c *database.DBController, config *config.Config) *AuthService {
-	return &AuthService{dbController: c, Cfg: config}
+func NewAuthService(c *database.DBController, config *config.Config) *AuthServiceImpl {
+	return &AuthServiceImpl{dbController: c, Cfg: config}
 }
 
-func (s *AuthService) SignIn(email, password string) (int, error) {
+func (s *AuthServiceImpl) SignIn(email, password string) (int, error) {
 	preparedEmail := strings.ToLower(strings.TrimSpace(email))
 	slog.Info("Getting user by email", "email", preparedEmail)
 	user, err := s.dbController.GetUserByEmail(preparedEmail)
@@ -39,7 +45,7 @@ func (s *AuthService) SignIn(email, password string) (int, error) {
 	return user.ID, nil
 }
 
-func (s *AuthService) SignUp(name, email, password string) error {
+func (s *AuthServiceImpl) SignUp(name, email, password string) error {
 	preparedEmail := strings.ToLower(strings.TrimSpace(email))
 	preparedPassword := strings.TrimSpace(password)
 
@@ -67,6 +73,6 @@ func (s *AuthService) SignUp(name, email, password string) error {
 	return nil
 }
 
-func (s *AuthService) RecoverPassword(_ string) error {
+func (s *AuthServiceImpl) RecoverPassword(_ string) error {
 	return ErrNotImplemented
 }

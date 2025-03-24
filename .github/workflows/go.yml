@@ -23,7 +23,7 @@ jobs:
         run: go mod tidy
 
       - name: Run Tests
-        run: go test -v ./cmd/app
+        run: go test -v ./...
 
   lint:
     name: Run Linter
